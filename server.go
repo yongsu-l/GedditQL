@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -28,6 +29,8 @@ func main() {
 	defer l.Close()
 
 	fmt.Println("Listening on " + ConnHost + ":" + ConnPort)
+
+	// Loop until database is killed
 	for {
 		// Listen for incoming connections
 		conn, err := l.Accept()
@@ -37,14 +40,14 @@ func main() {
 		}
 		go handleRequest(conn)
 	}
+
 }
 
 func handleRequest(conn net.Conn) {
-	// make a buffer to hold all of the incoming data
-	buf := make([]byte, 1024)
 	// Read the incoming data to buffer
-	reqLen, err := conn.Read(buf)
-	fmt.Println(reqLen)
+	query, err := bufio.NewReader(conn).ReadString(';')
+	// the query must have a semicolon as delimiter
+	fmt.Println(query)
 	if err != nil {
 		fmt.Println("Error reading:", err.Error())
 		os.Exit(1)
