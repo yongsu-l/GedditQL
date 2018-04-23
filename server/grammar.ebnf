@@ -6,15 +6,15 @@ Grammar:
 <data_type> 	  := 	<decimal> | long | int | bool | <char> | <varchar>
 <numeric> 		  := 	int | long | <decimal>
 <value> 			  := 	string | bool | <numeric>
-<comparator> 	  := 	<> | <= | >= | = | < | > | !=
+<comparator> 	  := 	< | <> | <= | > | >= | = | !=
 <table_ref> 	  := 	string
-<column_ref> 	  := 	string
+<column_ref> 	  := 	[<table_ref>.]string
 
 <values>        :=  <value>{ "," <value> }
 <table_refs>    :=  <table_ref>{ "," <table_ref> }
 <column_refs>   :=  <column_ref{ "," <column_ref> }
 
-<term> 				  := 	<value> | [ <table_ref>"." ]<column_ref>
+<term> 				  := 	<value> | <column_ref>
 <expr>          :=  <term>
                     | <expr> "+" <expr>
                     | <expr> "-" <expr>
@@ -62,7 +62,7 @@ Grammar:
                     VALUES "(" <values> ")"
 
 <set_exprs>     :=  <column_ref>"="<expr>{ "," <set_exprs> }
-<update>        :=  UPDATE <table_ref> [ AS string ]
+<update>        :=  UPDATE <table_ref> [[ AS ] string ]
                     SET <set_exprs>
                     [ WHERE <condition> ]
 
