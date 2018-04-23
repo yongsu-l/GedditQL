@@ -1,0 +1,73 @@
+Grammar:
+
+<decimal> 		  := 	float | double
+<char> 				  := 	string_fixed_size
+<varchar> 		  := 	string
+<data_type> 	  := 	<decimal> | long | int | bool | <char> | <varchar>
+<numeric> 		  := 	int | long | <decimal>
+<value> 			  := 	string | bool | <numeric>
+<comparator> 	  := 	<> | <= | >= | = | < | > | !=
+<table_ref> 	  := 	string
+<column_ref> 	  := 	string
+
+<values>        :=  <value>{ "," <value> }
+<table_refs>    :=  <table_ref>{ "," <table_ref> }
+<column_refs>   :=  <column_ref{ "," <column_ref> }
+
+<term> 				  := 	<value> | [ <table_ref>"." ]<column_ref>
+<expr>          :=  <term>
+                    | <expr> "+" <expr>
+                    | <expr> "-" <expr>
+                    | <expr> "*" <expr>
+                    | <expr> "/" <expr>
+                    | <expr> "%" <expr>
+
+<condition>   	:= 	<expr>
+                    | "(" <condition> ")"
+                    | NOT <condition>
+                    | <expr> <comparator> <expr>
+                    | <expr> [ NOT ] IN ( <values> })
+                    | <expr> [ NOT ] LIKE <expr>
+                    | <expr> IS [ NOT ] NULL
+                    | <condition> <comparator> <condition>
+                    | <condition> AND <condition>
+                    | <condition> OR <condition>
+
+<select_exprs>  := <term> [ AS string ]{ "," <select_exprs> }
+<order>				  := 	<condition> [ ASC | DESC ]
+<select> 			  := 	SELECT [ DISTINCT ] ( "*" | <select_exprs> )
+                    [ FROM <table_refs> ]
+                    [ WHERE <condition> ]
+                    [ ORDER BY <order> ]
+                    [ LIMIT int ]
+
+<column_defs>   :=  <column_ref> <data_type> 
+                    [[ NOT ] NULL ] 
+                    [ PRIMARY KEY ]
+                    [ UNIQUE ]
+                    [ DEFAULT <value> ]
+                    [ REFERENCES <table_ref>"."<column_ref> ]
+                    { "," <column_defs> }
+<constraints>   :=  CONSTRAINT <column_ref> 
+                    [ PRIMARY KEY ]
+                    [ REFERENCES <table_ref>"."<column_ref> ]
+                    { "," <constraints> }
+<create>        :=  CREATE TABLE [ IF NOT EXISTS ] table_ref "(" 
+                      <column_defs>
+                      [ "," <constraints> ]
+                    ")"
+
+<insert>        :=  INSERT INTO <table_ref>
+                    [ "(" <column_refs> ")" ]
+                    VALUES "(" <values> ")"
+
+<set_exprs>     :=  <column_ref>"="<expr>{ "," <set_exprs> }
+<update>        :=  UPDATE <table_ref> [ AS string ]
+                    SET <set_exprs>
+                    [ WHERE <condition> ]
+
+<delete>        :=  DELETE FROM <table_ref>
+                    [ WHERE <condition> ]
+                    [ LIMIT int ]
+
+<query>         :=  ( <select> | <create> | <insert> | <update> | <delete> )";"
