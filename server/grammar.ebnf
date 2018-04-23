@@ -26,7 +26,7 @@ Grammar:
                     | "(" <condition> ")"
                     | NOT <condition>
                     | <expr> <comparator> <expr>
-                    | <expr> [ NOT ] IN ( <values> })
+                    | <expr> [ NOT ] IN "(" <values> } ")"
                     | <expr> [ NOT ] LIKE <expr>
                     | <expr> IS [ NOT ] NULL
                     | <condition> <comparator> <condition>
