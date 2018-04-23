@@ -1,14 +1,22 @@
-package gqlparser
+package gql
 
 import (
 	"bytes"
 )
 
+// Parser struct
+type Parser struct{}
+
+// NewParser returns a newly created parser
+func NewParser() *Parser {
+	return new(Parser)
+}
+
 // Tokenize returns an array of tokens
-func Tokenize(s string) []string {
+func (p *Parser) Tokenize(s string) []string {
 	var buffer bytes.Buffer
 
-	c := CountTokens(s)
+	c := p.CountTokens(s)
 	r := make([]string, c)
 	j := 0
 	ReadBuffer := func() {
@@ -59,7 +67,7 @@ func Tokenize(s string) []string {
 }
 
 // CountTokens returns the number of tokens in a string
-func CountTokens(s string) int {
+func (p *Parser) CountTokens(s string) int {
 	c := 0
 	b := false
 	CheckB := func() {
