@@ -1,27 +1,26 @@
-package gql
+package parser
 
 import (
 	"bytes"
+	"errors"
+	"strings"
 )
 
-// Parser struct
-type Parser struct{}
-
-// NewParser returns a newly created parser
-func NewParser() *Parser {
-	return new(Parser)
-}
-
 // Tokenize returns an array of tokens
-func (p *Parser) Tokenize(s string) []string {
+///////////////////////////////////////////////////////////////////////////////////////////////
+func Tokenize(s string) ([]string, error) {
 	var buffer bytes.Buffer
 
-	c := p.CountTokens(s)
+	c, err := countTokens(s)
+	if err != nil {
+		return nil, err
+	}
+
 	r := make([]string, c)
 	j := 0
-	ReadBuffer := func() {
+	PopBuffer := func() {
 		if buffer.String() != "" {
-			r[j] = buffer.String()
+			r[j] = strings.ToLower(buffer.String())
 			buffer.Reset()
 			j++
 		}
@@ -30,21 +29,21 @@ func (p *Parser) Tokenize(s string) []string {
 	for i := 0; i < len(s); i++ {
 		switch nb := s[i]; nb {
 		case ' ', '\n':
-			ReadBuffer()
+			PopBuffer()
 			break
 		case ';', ',', '.', '(', ')', '+', '-', '*', '/', '%', '=':
-			ReadBuffer()
-			r[j] = string(nb)
+			PopBuffer()
+			r[j] = strings.ToLower(string(nb))
 			j++
 			break
 		case '<':
-			ReadBuffer()
+			PopBuffer()
 			buffer.WriteByte(nb)
 			if i+1 < len(s) && (s[i+1] == '>' || s[i+1] == '=') {
 				i++
 				buffer.WriteByte(s[i])
 			}
-			ReadBuffer()
+			PopBuffer()
 			break
 		case '>', '!':
 			buffer.WriteByte(nb)
@@ -52,7 +51,37 @@ func (p *Parser) Tokenize(s string) []string {
 				i++
 				buffer.WriteByte(s[i])
 			}
-			ReadBuffer()
+			PopBuffer()
+			break
+		case '\'':
+			PopBuffer()
+			buffer.WriteByte(nb)
+			for {
+				i++
+				if s[i] == ';' {
+					return nil, errors.New("Missing Closing Quotes")
+				}
+				buffer.WriteByte(s[i])
+				if s[i] == '\'' {
+					break
+				}
+			}
+			PopBuffer()
+			break
+		case '"':
+			PopBuffer()
+			buffer.WriteByte(nb)
+			for {
+				i++
+				if s[i] == ';' {
+					return nil, errors.New("Missing Closing Quotes")
+				}
+				buffer.WriteByte(s[i])
+				if s[i] == '"' {
+					break
+				}
+			}
+			PopBuffer()
 			break
 		default:
 			buffer.WriteByte(nb)
@@ -60,14 +89,14 @@ func (p *Parser) Tokenize(s string) []string {
 	}
 
 	if j < c {
-		ReadBuffer()
+		PopBuffer()
 	}
 
-	return r
+	return r, nil
 }
 
-// CountTokens returns the number of tokens in a string
-func (p *Parser) CountTokens(s string) int {
+///////////////////////////////////////////////////////////////////////////////////////////////
+func countTokens(s string) (int, error) {
 	c := 0
 	b := false
 	CheckB := func() {
@@ -100,10 +129,34 @@ func (p *Parser) CountTokens(s string) int {
 			CheckB()
 			c++
 			break
+		case '\'':
+			for {
+				i++
+				if s[i] == ';' {
+					return 0, errors.New("Missing Closing Quotes")
+				}
+				if s[i] == '\'' {
+					break
+				}
+			}
+			c++
+			break
+		case '"':
+			for {
+				i++
+				if s[i] == ';' {
+					return 0, errors.New("Missing Closing Quotes")
+				}
+				if s[i] == '"' {
+					break
+				}
+			}
+			c++
+			break
 		default:
 			b = true
 		}
 	}
 
-	return c
+	return c, nil
 }
