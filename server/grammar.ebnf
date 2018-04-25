@@ -1,40 +1,25 @@
 Grammar:
 
-<decimal> 		  := 	float | double
-<char> 				  := 	string_fixed_size
-<varchar> 		  := 	string
-<data_type> 	  := 	<decimal> | long | int | bool | <char> | <varchar>
-<numeric> 		  := 	int | long | <decimal>
-<value> 			  := 	string | bool | <numeric>
+<data_type> 	  := 	"float" | "int" | "bool" | "string"
+<value> 			  := 	string | bool | float | int
 <comparator> 	  := 	< | <> | <= | > | >= | = | !=
-<table_ref> 	  := 	string
-<column_ref> 	  := 	[<table_ref>.]string
+<operator>      :=  + | - | * | / | %
+<table_ref> 	  := 	name
+<column_ref> 	  := 	[ <table_ref>"." ]name
 
 <values>        :=  <value>{ "," <value> }
 <table_refs>    :=  <table_ref>{ "," <table_ref> }
 <column_refs>   :=  <column_ref{ "," <column_ref> }
 
 <term> 				  := 	<value> | <column_ref>
-<expr>          :=  <term>
-                    | <expr> "+" <expr>
-                    | <expr> "-" <expr>
-                    | <expr> "*" <expr>
-                    | <expr> "/" <expr>
-                    | <expr> "%" <expr>
 
-<condition>   	:= 	<expr>
-                    | "(" <condition> ")"
-                    | NOT <condition>
-                    | <expr> <comparator> <expr>
-                    | <expr> [ NOT ] IN "(" <values> } ")"
-                    | <expr> [ NOT ] LIKE <expr>
-                    | <expr> IS [ NOT ] NULL
+<condition>   	:= 	NOT <condition>
                     | <condition> <comparator> <condition>
                     | <condition> AND <condition>
                     | <condition> OR <condition>
 
-<select_exprs>  := <term> [ AS string ]{ "," <select_exprs> }
-<order>				  := 	<condition> [ ASC | DESC ]
+<select_exprs>  := <term> [ AS name ]{ "," <select_exprs> }
+<order>				  := 	<column_ref> [ ASC | DESC ]
 <select> 			  := 	SELECT [ DISTINCT ] ( "*" | <select_exprs> )
                     [ FROM <table_refs> ]
                     [ WHERE <condition> ]
@@ -46,15 +31,9 @@ Grammar:
                     [ PRIMARY KEY ]
                     [ UNIQUE ]
                     [ DEFAULT <value> ]
-                    [ REFERENCES <table_ref>"."<column_ref> ]
                     { "," <column_defs> }
-<constraints>   :=  CONSTRAINT <column_ref> 
-                    [ PRIMARY KEY ]
-                    [ REFERENCES <table_ref>"."<column_ref> ]
-                    { "," <constraints> }
 <create>        :=  CREATE TABLE [ IF NOT EXISTS ] table_ref "(" 
                       <column_defs>
-                      [ "," <constraints> ]
                     ")"
 
 <insert>        :=  INSERT INTO <table_ref>
@@ -62,7 +41,7 @@ Grammar:
                     VALUES "(" <values> ")"
 
 <set_exprs>     :=  <column_ref>"="<expr>{ "," <set_exprs> }
-<update>        :=  UPDATE <table_ref> [[ AS ] string ]
+<update>        :=  UPDATE <table_ref>
                     SET <set_exprs>
                     [ WHERE <condition> ]
 
