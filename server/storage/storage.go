@@ -192,6 +192,7 @@ func (db *Database) InsertInto(tblName string, insertion map[string]string) erro
 	// 	log.Println(k, v.Data)
 	// }
 
+	// Save after every insertinto for now...
 	return db.Save()
 }
 
