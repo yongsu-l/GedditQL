@@ -21,6 +21,13 @@ type Table struct {
 	Rows map[string]*Data
 }
 
+// ReturnTable is the type which is first an array of column names, then an array of types, then an array of all the data
+type ReturnTable struct {
+	Names []string
+	Types []string
+	Data  [][]string
+}
+
 // Database which holds all of the tables
 type Database struct {
 	Dir    string
@@ -138,10 +145,23 @@ func (db *Database) Count(tblName string) int {
 	return len(db.Tables[tblName].Rows)
 }
 
+// Normalize makes it so that if there are no values that were inserted into the db, it will insert an nil value appropriate
+func (db *Database) Normalize(tblName string, length int) error {
+
+	for k := range db.Tables[tblName].Rows {
+		if len(db.Tables[tblName].Rows[k].Data) < length {
+			db.Tables[tblName].Rows[k].Data = append(db.Tables[tblName].Rows[k].Data, "")
+		}
+	}
+
+	return nil
+}
+
 // InsertInto inserts into the table with the tblName specified along with the column and value pair in the map.
 func (db *Database) InsertInto(tblName string, insertion map[string]string) error {
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	var length int
 
 	// Check if tbl is in db
 	if _, ok := db.Tables[tblName]; ok {
@@ -150,12 +170,12 @@ func (db *Database) InsertInto(tblName string, insertion map[string]string) erro
 			// Check if column name exists in table, otherwise throw error
 			if _, ok = db.Tables[tblName].Rows[k]; ok {
 
-				// Assign tmp as new array then assign it to db
-				tmp := db.Tables[tblName].Rows[k].Data
-				tmp = append(tmp, v)
-
-				db.Tables[tblName].Rows[k].Data = tmp
+				// Append new value at the end
+				db.Tables[tblName].Rows[k].Data = append(db.Tables[tblName].Rows[k].Data, v)
 				// log.Println(db.Tables[tblName].Rows[k].Data)
+				if len(db.Tables[tblName].Rows[k].Data) > length {
+					length = len(db.Tables[tblName].Rows[k].Data)
+				}
 
 			} else {
 				return &errorString{"Column name not in database"}
@@ -165,20 +185,44 @@ func (db *Database) InsertInto(tblName string, insertion map[string]string) erro
 		return &errorString{"Table not in database"}
 	}
 
-	for k, v := range db.Tables[tblName].Rows {
-		log.Println(k, v.Data)
-	}
+	// Normalize all values so that length are all equal among the arrays
+	db.Normalize(tblName, length)
+
+	// for k, v := range db.Tables[tblName].Rows {
+	// 	log.Println(k, v.Data)
+	// }
 
 	return db.Save()
+}
+
+// Select returns the table with the columns specified
+func (db *Database) Select(colNames []string, tblName string) (ReturnTable, error) {
+	t := ReturnTable{}
+
+	for _, v := range colNames {
+		if _, exist := db.Tables[tblName].Rows[v]; exist {
+			t.Names = append(t.Names, v)
+			t.Types = append(t.Types, db.Tables[tblName].Rows[v].Type)
+			for k, v := range db.Tables[tblName].Rows[v].Data {
+				if len(t.Data) <= k {
+					var empty []string
+					t.Data = append(t.Data, empty)
+					t.Data[k] = append(t.Data[k], v)
+				} else {
+					t.Data[k] = append(t.Data[k], v)
+				}
+			}
+		} else {
+			return ReturnTable{}, &errorString{"Column name doesn't exist"}
+		}
+	}
+
+	return t, nil
 }
 
 // CreateTable with names and type specified
 //func (db *Database) CreateTable(tablename string, Columns []Column) {
 //	db.Tables[tablename] = Table{Columns: Columns}
-//}
-
-//func (db *Database) Select(Cols []string) Table {
-//
 //}
 
 /*
