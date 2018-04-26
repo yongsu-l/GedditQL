@@ -9,29 +9,16 @@ import (
 
 const filename = "storage.gob"
 
-// Data stored in row
+// Data which will hold all of the data
 type Data struct {
-}
-
-// Row which will hold all of the data
-type Row struct {
+	Type string
 	Data []string
-}
-
-// Column is the type of columns in the table
-type Column struct {
-	Name       string
-	ColumnType string
 }
 
 // Table which holds all of the values in an array as order matters
 type Table struct {
-	// Name of Table
-	Name string
-	// Specifies the name of columns
-	Columns []Column
-	// Data held within each row
-	Rows []Row
+	// Data held within each row linearly
+	Rows map[string]*Data
 }
 
 // Database which holds all of the tables
@@ -39,6 +26,14 @@ type Database struct {
 	Dir    string
 	File   string
 	Tables map[string]Table
+}
+
+type errorString struct {
+	s string
+}
+
+func (e *errorString) Error() string {
+	return e.s
 }
 
 // New Initializes a struct of DB and creates file and directory if needed
@@ -114,15 +109,73 @@ func (db *Database) Save() error {
 
 }
 
-// CreateTable with names and type specified
-func (db *Database) CreateTable(tablename string, Columns []Column) {
-	db.Tables[tablename] = Table{Name: tablename, Columns: Columns}
+// CheckData checks if the column name specified exists in table
+func (db *Database) CheckData(tblName string, val *Data) bool {
+
+	return true
 }
 
-// From returns the table of the tablename
-func (db *Database) From(tblName string) Table {
-	return db.Tables[tblName]
+// CreateTable creates a table in the current database
+func (db *Database) CreateTable(tblName string, Rows map[string]*Data) error {
+	db.Tables[tblName] = Table{Rows: Rows}
+	// Save on each CreateTable
+	return db.Save()
 }
+
+// ColumnNames ///
+func (db *Database) ColumnNames(tblName string) []string {
+	var columns []string
+
+	for k := range db.Tables[tblName].Rows {
+		columns = append(columns, k)
+	}
+
+	return columns
+}
+
+// Count returns the count of rows in table
+func (db *Database) Count(tblName string) int {
+	return len(db.Tables[tblName].Rows)
+}
+
+// InsertInto inserts into the table with the tblName specified along with the column and value pair in the map.
+func (db *Database) InsertInto(tblName string, insertion map[string]string) error {
+
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	// Check if tbl is in db
+	if _, ok := db.Tables[tblName]; ok {
+		// tbl := db.Tables[tblName]
+		for k, v := range insertion {
+			// Check if column name exists in table, otherwise throw error
+			if _, ok = db.Tables[tblName].Rows[k]; ok {
+
+				// Assign tmp as new array then assign it to db
+				tmp := db.Tables[tblName].Rows[k].Data
+				tmp = append(tmp, v)
+
+				db.Tables[tblName].Rows[k].Data = tmp
+				// log.Println(db.Tables[tblName].Rows[k].Data)
+
+			} else {
+				return &errorString{"Column name not in database"}
+			}
+		}
+	} else {
+		return &errorString{"Table not in database"}
+	}
+
+	for k, v := range db.Tables[tblName].Rows {
+		log.Println(k, v.Data)
+	}
+
+	return db.Save()
+}
+
+// CreateTable with names and type specified
+//func (db *Database) CreateTable(tablename string, Columns []Column) {
+//	db.Tables[tablename] = Table{Columns: Columns}
+//}
 
 //func (db *Database) Select(Cols []string) Table {
 //
