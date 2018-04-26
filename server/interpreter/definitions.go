@@ -1,7 +1,7 @@
 package interpreter
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-type selectOptions struct {
+type SelectOptions struct {
 	Distinct   bool
 	All        bool
 	ColumnRefs []string
