@@ -141,12 +141,7 @@ func checkTerm(tq *queue) error {
 	return checkColumnRef(tq)
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-func checkValue(tq *queue) (bool, error) {
-	if tq.Current() == EOQ {
-		return false, newError(ErrIllEOQuery, tq)
-	}
-
+func checkNumeric(tq *queue) (bool, error) {
 	if _, err := strconv.Atoi(tq.Current()); err == nil {
 		if tq.Next().Current() != "." {
 			return true, nil
@@ -157,7 +152,31 @@ func checkValue(tq *queue) (bool, error) {
 			return true, nil
 		}
 
-		return false, newError(ErrUnexpToken, tq)
+		return false, newError(ErrIllValue, tq)
+	}
+	return false, nil
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+func checkValue(tq *queue) (bool, error) {
+	if tq.Current() == EOQ {
+		return false, newError(ErrIllEOQuery, tq)
+	}
+
+	if tq.Current() == SUB {
+		b, err := checkNumeric(tq.Next())
+		if !b || err != nil {
+			return false, newError(ErrIllValue, tq)
+		}
+		return true, nil
+	}
+
+	b, err := checkNumeric(tq)
+	if err != nil {
+		return false, err
+	}
+	if b {
+		return true, nil
 	}
 
 	if tq.Current()[0] == '\'' {
@@ -238,11 +257,8 @@ func checkTableRefs(tq *queue) error {
 func checkName(tq *queue) error {
 	dt := RESERVED
 
-	for len(dt) > 0 {
-		if tq.Current() == dt[0] {
-			return newError("", tq)
-		}
-		dt = dt[1:]
+	if dt[tq.Current()] {
+		return newError("", tq)
 	}
 
 	tq.Next()
@@ -261,7 +277,7 @@ func checkCondition(tq *queue) error {
 	}
 
 	if tq.Current() == AND || tq.Current() == OR {
-		err := checkExpr(tq.Next())
+		err := checkCondition(tq.Next())
 		if err != nil {
 			return err
 		}
@@ -406,12 +422,9 @@ func checkColumnDefs(tq *queue) error {
 func checkDataType(tq *queue) error {
 	dt := DATATYPES
 
-	for len(dt) > 0 {
-		if tq.Current() == dt[0] {
-			tq.Next()
-			return nil
-		}
-		dt = dt[1:]
+	if dt[tq.Current()] {
+		tq.Next()
+		return nil
 	}
 
 	tq.Next()
