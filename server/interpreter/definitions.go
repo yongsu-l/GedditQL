@@ -1,6 +1,6 @@
 package interpreter
 
-///////////////////////////////////////////////////////////////////////////////////////////////
+// SelectOptions are the extracted parameters from a select statement
 type SelectOptions struct {
 	Distinct   bool
 	All        bool
