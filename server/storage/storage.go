@@ -273,6 +273,10 @@ func (db *Database) Select(opts interpreter.SelectOptions) (ReturnTable, error) 
 		t.Distinct()
 	}
 
+	if opts.Limit > 0 {
+		t.Data = t.Data[opts.Limit:]
+	}
+
 	// log.Println(t.Data[1][0])
 
 	return t, nil
