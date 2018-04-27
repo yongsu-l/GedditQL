@@ -54,16 +54,17 @@ func Tokenize(s string) ([]string, error) {
 			break
 		case '\'':
 			PopBuffer()
-			buffer.WriteByte(nb)
+			buffer.WriteByte('"')
 			for {
 				i++
 				if s[i] == ';' {
 					return nil, errors.New("Missing Closing Quotes")
 				}
-				buffer.WriteByte(s[i])
 				if s[i] == '\'' {
+					buffer.WriteByte('"')
 					break
 				}
+				buffer.WriteByte(s[i])
 			}
 			PopBuffer()
 			break
