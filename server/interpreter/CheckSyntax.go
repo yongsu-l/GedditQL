@@ -2,6 +2,7 @@ package interpreter
 
 import (
 	"strconv"
+	"strings"
 )
 
 // CheckSyntax : Syntax Checker
@@ -9,7 +10,7 @@ import (
 func CheckSyntax(tks []string) error {
 	tq := newQueue(tks)
 
-	switch tk := tq.Current(); tk {
+	switch tk := strings.ToLower(tq.Current()); tk {
 	case EOQ:
 		return newError(ErrNoQuery, tq)
 	case SELECT:
@@ -32,13 +33,13 @@ func CheckSyntax(tks []string) error {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkSelect(tq *queue) error {
 	var err error
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return newError(ErrIllEOQuery, tq)
 	}
-	if tq.Current() == DISTINCT {
+	if strings.ToLower(tq.Current()) == DISTINCT {
 		tq.Next()
 	}
-	if tq.Current() == ALL {
+	if strings.ToLower(tq.Current()) == ALL {
 		tq.Next()
 	} else {
 		err = checkSelectExprs(tq)
@@ -47,13 +48,13 @@ func checkSelect(tq *queue) error {
 		}
 	}
 
-	if tq.Current() == FROM {
+	if strings.ToLower(tq.Current()) == FROM {
 		err = checkTableRefs(tq.Next())
 		if err != nil {
 			return err
 		}
 
-		if tq.Current() == WHERE {
+		if strings.ToLower(tq.Current()) == WHERE {
 			err = checkCondition(tq.Next())
 		}
 
@@ -61,8 +62,8 @@ func checkSelect(tq *queue) error {
 			return err
 		}
 
-		if tq.Current() == ORDER {
-			if tq.Next().Current() != BY {
+		if strings.ToLower(tq.Current()) == ORDER {
+			if strings.ToLower(tq.Next().Current()) != BY {
 				return newError(ErrExpToken+"\"BY\"", tq)
 			}
 
@@ -71,20 +72,20 @@ func checkSelect(tq *queue) error {
 				return err
 			}
 
-			if tq.Current() == ASC || tq.Current() == DESC {
+			if strings.ToLower(tq.Current()) == ASC || strings.ToLower(tq.Current()) == DESC {
 				tq.Next()
 			}
 		}
 
-		if tq.Current() == LIMIT {
-			if _, err := strconv.Atoi(tq.Next().Current()); err != nil {
+		if strings.ToLower(tq.Current()) == LIMIT {
+			if _, err := strconv.Atoi(strings.ToLower(tq.Next().Current())); err != nil {
 				return newError(ErrExpInt, tq)
 			}
 			tq.Next()
 		}
 	}
 
-	if tq.Current() != EOQ {
+	if strings.ToLower(tq.Current()) != EOQ {
 		return newError(ErrUnexpToken, tq)
 	}
 
@@ -93,10 +94,10 @@ func checkSelect(tq *queue) error {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkSelectExprs(tq *queue) error {
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return newError(ErrIllEOQuery, tq)
 	}
-	if tq.Current() == FROM {
+	if strings.ToLower(tq.Current()) == FROM {
 		return newError(ErrNoSelExp, tq)
 	}
 
@@ -106,14 +107,14 @@ func checkSelectExprs(tq *queue) error {
 			return err
 		}
 
-		if tq.Current() == AS {
+		if strings.ToLower(tq.Current()) == AS {
 			err = checkName(tq.Next())
 			if err != nil {
 				return newError(ErrIllAlias, tq)
 			}
 		}
 
-		if tq.Current() == COMMA {
+		if strings.ToLower(tq.Current()) == COMMA {
 			tq.Next()
 		} else {
 			break
@@ -125,7 +126,7 @@ func checkSelectExprs(tq *queue) error {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkTerm(tq *queue) error {
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return newError(ErrIllEOQuery, tq)
 	}
 
@@ -142,12 +143,12 @@ func checkTerm(tq *queue) error {
 }
 
 func checkNumeric(tq *queue) (bool, error) {
-	if _, err := strconv.Atoi(tq.Current()); err == nil {
-		if tq.Next().Current() != "." {
+	if _, err := strconv.Atoi(strings.ToLower(tq.Current())); err == nil {
+		if strings.ToLower(tq.Next().Current()) != "." {
 			return true, nil
 		}
 
-		if _, err := strconv.Atoi(tq.Next().Current()); err == nil {
+		if _, err := strconv.Atoi(strings.ToLower(tq.Next().Current())); err == nil {
 			tq.Next()
 			return true, nil
 		}
@@ -159,11 +160,11 @@ func checkNumeric(tq *queue) (bool, error) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkValue(tq *queue) (bool, error) {
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return false, newError(ErrIllEOQuery, tq)
 	}
 
-	if tq.Current() == SUB {
+	if strings.ToLower(tq.Current()) == SUB {
 		b, err := checkNumeric(tq.Next())
 		if !b || err != nil {
 			return false, newError(ErrIllValue, tq)
@@ -179,8 +180,8 @@ func checkValue(tq *queue) (bool, error) {
 		return true, nil
 	}
 
-	if tq.Current()[0] == '\'' {
-		if tq.Current()[len(tq.Current())-1] == '\'' {
+	if strings.ToLower(tq.Current())[0] == '\'' {
+		if strings.ToLower(tq.Current())[len(strings.ToLower(tq.Current()))-1] == '\'' {
 			tq.Next()
 			return true, nil
 		}
@@ -188,15 +189,15 @@ func checkValue(tq *queue) (bool, error) {
 		return false, newError(ErrOpenQuote, tq)
 	}
 
-	if tq.Current()[0] == '"' {
-		if tq.Current()[len(tq.Current())-1] == '"' {
+	if strings.ToLower(tq.Current())[0] == '"' {
+		if strings.ToLower(tq.Current())[len(strings.ToLower(tq.Current()))-1] == '"' {
 			tq.Next()
 			return true, nil
 		}
 		return false, newError(ErrOpenQuote, tq)
 	}
 
-	if tq.Current() == TRUE || tq.Current() == FALSE {
+	if strings.ToLower(tq.Current()) == TRUE || strings.ToLower(tq.Current()) == FALSE {
 		tq.Next()
 		return true, nil
 	}
@@ -206,7 +207,7 @@ func checkValue(tq *queue) (bool, error) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkColumnRef(tq *queue) error {
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return newError(ErrIllEOQuery, tq)
 	}
 
@@ -215,8 +216,8 @@ func checkColumnRef(tq *queue) error {
 		return newError(ErrIllColRef, tq)
 	}
 
-	if tq.Current() == DOT {
-		if tq.Next().Current() == EOQ {
+	if strings.ToLower(tq.Current()) == DOT {
+		if strings.ToLower(tq.Next().Current()) == EOQ {
 			return newError(ErrIllEOQuery, tq)
 		}
 
@@ -233,7 +234,7 @@ func checkColumnRef(tq *queue) error {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkTableRefs(tq *queue) error {
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return newError(ErrIllEOQuery, tq)
 	}
 
@@ -243,7 +244,7 @@ func checkTableRefs(tq *queue) error {
 			return newError(ErrIllTabRef, tq)
 		}
 
-		if tq.Current() == COMMA {
+		if strings.ToLower(tq.Current()) == COMMA {
 			tq.Next()
 		} else {
 			break
@@ -257,7 +258,7 @@ func checkTableRefs(tq *queue) error {
 func checkName(tq *queue) error {
 	dt := RESERVED
 
-	if dt[tq.Current()] {
+	if dt[strings.ToLower(tq.Current())] {
 		return newError("", tq)
 	}
 
@@ -267,7 +268,7 @@ func checkName(tq *queue) error {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkCondition(tq *queue) error {
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return newError(ErrIllEOQuery, tq)
 	}
 
@@ -276,7 +277,7 @@ func checkCondition(tq *queue) error {
 		return err
 	}
 
-	if tq.Current() == AND || tq.Current() == OR {
+	if strings.ToLower(tq.Current()) == AND || strings.ToLower(tq.Current()) == OR {
 		err := checkCondition(tq.Next())
 		if err != nil {
 			return err
@@ -288,7 +289,7 @@ func checkCondition(tq *queue) error {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkExpr(tq *queue) error {
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return newError(ErrIllEOQuery, tq)
 	}
 	err := checkTerm(tq)
@@ -296,7 +297,7 @@ func checkExpr(tq *queue) error {
 		return err
 	}
 
-	switch tk := tq.Current(); tk {
+	switch tk := strings.ToLower(tq.Current()); tk {
 	case LESS, ISNOT, LESSEQ, GREATER, GREATEREQ, EQ, NEQ:
 		err = checkTerm(tq.Next())
 		if err != nil {
@@ -313,12 +314,12 @@ func checkExpr(tq *queue) error {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkCreate(tq *queue) error {
-	if tq.Current() != TABLE && tq.Current() != VIEW {
+	if strings.ToLower(tq.Current()) != TABLE && strings.ToLower(tq.Current()) != VIEW {
 		return newError(ErrNoCreate, tq)
 	}
 
-	if tq.Next().Current() == IF {
-		if tq.Next().Current() != NOT || tq.Next().Current() != EXISTS {
+	if strings.ToLower(tq.Next().Current()) == IF {
+		if strings.ToLower(tq.Next().Current()) != NOT || strings.ToLower(tq.Next().Current()) != EXISTS {
 			return newError(ErrUnexpToken, tq)
 		}
 		tq.Next()
@@ -329,7 +330,7 @@ func checkCreate(tq *queue) error {
 		return newError(ErrIllTabRef, tq)
 	}
 
-	if tq.Current() != LPAREN {
+	if strings.ToLower(tq.Current()) != LPAREN {
 		return newError(ErrExpToken+"\""+LPAREN+"\"", tq)
 	}
 
@@ -338,7 +339,7 @@ func checkCreate(tq *queue) error {
 		return err
 	}
 
-	if tq.Current() != RPAREN {
+	if strings.ToLower(tq.Current()) != RPAREN {
 		return newError(ErrExpToken+"\""+RPAREN+"\"", tq)
 	}
 
@@ -347,7 +348,7 @@ func checkCreate(tq *queue) error {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkColumnDefs(tq *queue) error {
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return newError(ErrIllEOQuery, tq)
 	}
 
@@ -364,17 +365,17 @@ func checkColumnDefs(tq *queue) error {
 
 	loop:
 		for {
-			switch tk := tq.Current(); tk {
+			switch tk := strings.ToLower(tq.Current()); tk {
 			case EOQ:
 				return newError(ErrIllEOQuery, tq)
 			case NOT:
-				if tq.Next().Current() != NULL {
+				if strings.ToLower(tq.Next().Current()) != NULL {
 					return newError(ErrUnexpToken, tq)
 				}
 				tq.Next()
 				break
 			case PRIMARY:
-				if tq.Next().Current() != KEY {
+				if strings.ToLower(tq.Next().Current()) != KEY {
 					return newError(ErrUnexpToken, tq)
 				}
 				tq.Next()
@@ -393,7 +394,7 @@ func checkColumnDefs(tq *queue) error {
 			// 	if err != nil {
 			// 		return err
 			// 	}
-			// 	if tq.Current() != "." {
+			// 	if strings.ToLower(tq.Current()) != "." {
 			// 		return newError(ErrUnexpToken, tq)
 			// 	}
 			// 	err = checkName(tq.Next())
@@ -408,7 +409,7 @@ func checkColumnDefs(tq *queue) error {
 			}
 		}
 
-		if tq.Current() == COMMA {
+		if strings.ToLower(tq.Current()) == COMMA {
 			tq.Next()
 		} else {
 			break
@@ -422,7 +423,7 @@ func checkColumnDefs(tq *queue) error {
 func checkDataType(tq *queue) error {
 	dt := DATATYPES
 
-	if dt[tq.Current()] {
+	if dt[strings.ToLower(tq.Current())] {
 		tq.Next()
 		return nil
 	}
@@ -435,7 +436,7 @@ func checkDataType(tq *queue) error {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkInsert(tq *queue) error {
-	if tq.Current() != INTO {
+	if strings.ToLower(tq.Current()) != INTO {
 		return newError(ErrExpToken+"\"INTO\"", tq)
 	}
 
@@ -444,7 +445,7 @@ func checkInsert(tq *queue) error {
 		return newError(ErrIllTabRef, tq)
 	}
 
-	if tq.Current() == LPAREN {
+	if strings.ToLower(tq.Current()) == LPAREN {
 		tq.Next()
 		for {
 			err = checkName(tq)
@@ -452,23 +453,23 @@ func checkInsert(tq *queue) error {
 				return newError(ErrIllColRef, tq)
 			}
 
-			if tq.Current() == COMMA {
+			if strings.ToLower(tq.Current()) == COMMA {
 				tq.Next()
 			} else {
 				break
 			}
 		}
-		if tq.Current() != RPAREN {
+		if strings.ToLower(tq.Current()) != RPAREN {
 			return newError(ErrExpToken+"\""+RPAREN+"\"", tq)
 		}
 		tq.Next()
 	}
 
-	if tq.Current() != VALUES {
+	if strings.ToLower(tq.Current()) != VALUES {
 		return newError(ErrExpToken+"\"VALUES\"", tq)
 	}
 
-	if tq.Next().Current() != LPAREN {
+	if strings.ToLower(tq.Next().Current()) != LPAREN {
 		return newError(ErrExpToken+"\""+LPAREN+"\"", tq)
 	}
 
@@ -481,18 +482,18 @@ func checkInsert(tq *queue) error {
 		if !b {
 			return newError(ErrIllValue, tq)
 		}
-		if tq.Current() == COMMA {
+		if strings.ToLower(tq.Current()) == COMMA {
 			tq.Next()
 		} else {
 			break
 		}
 	}
 
-	if tq.Current() != RPAREN {
+	if strings.ToLower(tq.Current()) != RPAREN {
 		return newError(ErrExpToken+"\""+RPAREN+"\"", tq)
 	}
 
-	if tq.Next().Current() != EOQ {
+	if strings.ToLower(tq.Next().Current()) != EOQ {
 		return newError(ErrIllEOQuery, tq)
 	}
 
@@ -503,7 +504,7 @@ func checkInsert(tq *queue) error {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkUpdate(tq *queue) error {
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return newError(ErrIllEOQuery, tq)
 	}
 
@@ -512,7 +513,7 @@ func checkUpdate(tq *queue) error {
 		return newError(ErrIllTabRef, tq)
 	}
 
-	if tq.Current() != SET {
+	if strings.ToLower(tq.Current()) != SET {
 		return newError(ErrExpToken+"\"SET\"", tq)
 	}
 
@@ -521,14 +522,14 @@ func checkUpdate(tq *queue) error {
 		return err
 	}
 
-	if tq.Current() == WHERE {
+	if strings.ToLower(tq.Current()) == WHERE {
 		err := checkCondition(tq.Next())
 		if err != nil {
 			return err
 		}
 	}
 
-	if tq.Current() != EOQ {
+	if strings.ToLower(tq.Current()) != EOQ {
 		return newError(ErrUnexpToken, tq)
 	}
 
@@ -537,7 +538,7 @@ func checkUpdate(tq *queue) error {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkSetExprs(tq *queue) error {
-	if tq.Current() == EOQ {
+	if strings.ToLower(tq.Current()) == EOQ {
 		return newError(ErrNoSetExp, tq)
 	}
 
@@ -547,7 +548,7 @@ func checkSetExprs(tq *queue) error {
 			return err
 		}
 
-		if tq.Current() != EQ {
+		if strings.ToLower(tq.Current()) != EQ {
 			return newError(ErrUnexpToken, tq)
 		}
 
@@ -561,7 +562,7 @@ func checkSetExprs(tq *queue) error {
 			return newError(ErrIllValue, tq)
 		}
 
-		if tq.Current() == COMMA {
+		if strings.ToLower(tq.Current()) == COMMA {
 			tq.Next()
 		} else {
 			break
@@ -575,7 +576,7 @@ func checkSetExprs(tq *queue) error {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func checkDelete(tq *queue) error {
-	if tq.Current() != FROM {
+	if strings.ToLower(tq.Current()) != FROM {
 		return newError(ErrUnexpToken, tq)
 	}
 
@@ -584,21 +585,21 @@ func checkDelete(tq *queue) error {
 		return newError(ErrIllTabRef, tq)
 	}
 
-	if tq.Current() == WHERE {
+	if strings.ToLower(tq.Current()) == WHERE {
 		err = checkCondition(tq.Next())
 		if err != nil {
 			return err
 		}
 	}
 
-	if tq.Current() == LIMIT {
-		if _, err := strconv.Atoi(tq.Next().Current()); err != nil {
+	if strings.ToLower(tq.Current()) == LIMIT {
+		if _, err := strconv.Atoi(strings.ToLower(tq.Next().Current())); err != nil {
 			return newError(ErrExpInt, tq)
 		}
 		tq.Next()
 	}
 
-	if tq.Current() != EOQ {
+	if strings.ToLower(tq.Current()) != EOQ {
 		return newError(ErrUnexpToken, tq)
 	}
 

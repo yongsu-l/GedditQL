@@ -3,7 +3,6 @@ package parser
 import (
 	"bytes"
 	"errors"
-	"strings"
 )
 
 // Tokenize returns an array of tokens
@@ -20,7 +19,7 @@ func Tokenize(s string) ([]string, error) {
 	j := 0
 	PopBuffer := func() {
 		if buffer.String() != "" {
-			r[j] = strings.ToLower(buffer.String())
+			r[j] = buffer.String()
 			buffer.Reset()
 			j++
 		}
@@ -33,7 +32,7 @@ func Tokenize(s string) ([]string, error) {
 			break
 		case ';', ',', '.', '(', ')', '+', '-', '*', '/', '%', '=':
 			PopBuffer()
-			r[j] = strings.ToLower(string(nb))
+			r[j] = string(nb)
 			j++
 			break
 		case '<':
