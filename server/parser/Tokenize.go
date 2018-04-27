@@ -45,6 +45,7 @@ func Tokenize(s string) ([]string, error) {
 			PopBuffer()
 			break
 		case '>', '!':
+			PopBuffer()
 			buffer.WriteByte(nb)
 			if i+1 < len(s) && s[i+1] == '=' {
 				i++

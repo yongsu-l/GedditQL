@@ -27,7 +27,7 @@ Grammar:
                     [ LIMIT int ]
 
 <column_defs>   :=  <column_ref> <data_type> 
-                    [[ NOT ] NULL ] 
+                    [ NOT NULL ] 
                     [ PRIMARY KEY ]
                     [ UNIQUE ]
                     [ DEFAULT <value> ]
