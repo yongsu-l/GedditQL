@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"GedditQL/server/interpreter"
+	//"log"
 	"os"
 	"testing"
 )
@@ -126,21 +128,75 @@ func TestInsertInto(t *testing.T) {
 	db.InsertInto(tblName, insertion)
 }
 
+// func TestSelect(t *testing.T) {
+//
+// 	colNames := []string{col1, "Test column"}
+//
+// 	if _, err := db.Select(colNames, tblName); err == nil {
+// 		t.Error("Should spit error because column doesn't exist")
+// 	}
+//
+// 	colNames = []string{col1, col2}
+//
+// 	if tbl, err := db.Select(colNames, tblName); err != nil {
+// 		t.Error("Shouldn't spit out error because columns exist")
+// 	} else if len(tbl.Data) != 2 {
+// 		t.Error("Should be returning two rows of data set")
+// 	}
+// }
+
 func TestSelect(t *testing.T) {
+	opts := interpreter.SelectOptions{}
+	opts.TableRefs = append(opts.TableRefs, tblName)
 
-	colNames := []string{col1, "Test column"}
+	opts.All = true
 
-	if _, err := db.Select(colNames, tblName); err == nil {
-		t.Error("Should spit error because column doesn't exist")
+	//log.Println(opts)
+
+	if _, err := db.Select(opts); err != nil {
+		t.Fatal(err)
 	}
 
-	colNames = []string{col1, col2}
+	opts.Distinct = true
 
-	if tbl, err := db.Select(colNames, tblName); err != nil {
-		t.Error("Shouldn't spit out error because columns exist")
+	insertion := make(map[string]string)
+
+	insertion[col1] = "hello"
+	insertion[col2] = "world"
+
+	db.InsertInto(tblName, insertion)
+
+	if tbl, err := db.Select(opts); err != nil {
+		t.Fatal("Error selecting")
 	} else if len(tbl.Data) != 2 {
-		t.Error("Should be returning two rows of data set")
+		t.Fatal("Error choosing distinct")
 	}
+
+	opts = interpreter.SelectOptions{
+		TableRefs:  []string{tblName},
+		ColumnRefs: []string{col1, col2},
+	}
+
+	if tbl, err := db.Select(opts); err != nil {
+		t.Fatal(err)
+	} else {
+		t.Log(tbl)
+	}
+
+	// t.Log(opts.As)
+	opts.As = make(map[string]string)
+	opts.As[col1] = "Change Col"
+
+	if tbl, err := db.Select(opts); err != nil {
+		t.Fatal(err)
+	} else if tbl.Names[0] != "Change Col" {
+		t.Fatal("Failed to change column name")
+	} else {
+		t.Log(tbl)
+	}
+
+	t.Log(opts.Limit)
+
 }
 
 func createDB() error {
