@@ -1,10 +1,12 @@
 package storage
 
 import (
+	"GedditQL/server/interpreter"
 	"encoding/gob"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const filename = "storage.gob"
@@ -196,15 +198,42 @@ func (db *Database) InsertInto(tblName string, insertion map[string]string) erro
 	return db.Save()
 }
 
+// Distinct returns the table with only unique columns
+func (tbl *ReturnTable) Distinct() error {
+
+	e := map[string]bool{}
+
+	// log.Println(tbl.Data)
+
+	for k, v := range tbl.Data {
+		// log.Println(k, v)
+		// log.Println(strings.Join(v, ""))
+		if _, exists := e[strings.Join(v, "")]; exists == false {
+			e[strings.Join(v, "")] = true
+			// log.Println(tbl.Data[:k])
+			// log.Println(tbl.Data[k+1:])
+		} else {
+			tbl.Data = append(tbl.Data[:k], tbl.Data[k+1:]...)
+		}
+	}
+
+	// log.Println(tbl.Data)
+
+	return nil
+}
+
 // Select returns the table with the columns specified
-func (db *Database) Select(colNames []string, tblName string) (ReturnTable, error) {
+func (db *Database) Select(opts interpreter.SelectOptions) (ReturnTable, error) {
+
 	t := ReturnTable{}
 
-	for _, v := range colNames {
-		if _, exist := db.Tables[tblName].Rows[v]; exist {
-			t.Names = append(t.Names, v)
-			t.Types = append(t.Types, db.Tables[tblName].Rows[v].Type)
-			for k, v := range db.Tables[tblName].Rows[v].Data {
+	if opts.All {
+		// ignore columnrefs
+		for k, v := range db.Tables[opts.TableRefs[0]].Rows {
+			// log.Println(k, v)
+			t.Names = append(t.Names, k)
+			t.Types = append(t.Types, v.Type)
+			for k, v := range v.Data {
 				if len(t.Data) <= k {
 					var empty []string
 					t.Data = append(t.Data, empty)
@@ -213,13 +242,43 @@ func (db *Database) Select(colNames []string, tblName string) (ReturnTable, erro
 					t.Data[k] = append(t.Data[k], v)
 				}
 			}
-		} else {
-			return ReturnTable{}, &errorString{"Column name doesn't exist"}
+		}
+	} else {
+		// Respect columnrefs
+		for _, v := range opts.ColumnRefs {
+			if _, exists := db.Tables[tblName].Rows[v]; exists {
+				// Change name if exists in opts.As map
+				if _, exists := opts.As[v]; exists {
+					t.Names = append(t.Names, opts.As[v])
+				} else {
+					t.Names = append(t.Names, v)
+				}
+				t.Types = append(t.Types, db.Tables[tblName].Rows[v].Type)
+				for k, v := range db.Tables[tblName].Rows[v].Data {
+					if len(t.Data) <= k {
+						var empty []string
+						t.Data = append(t.Data, empty)
+						t.Data[k] = append(t.Data[k], v)
+					} else {
+						t.Data[k] = append(t.Data[k], v)
+					}
+				}
+			} else {
+				return ReturnTable{}, &errorString{"Column ref doesn't exist"}
+			}
 		}
 	}
 
+	if opts.Distinct {
+		t.Distinct()
+	}
+
+	// log.Println(t.Data[1][0])
+
 	return t, nil
 }
+
+// Update updates the value at the table specified
 
 // CreateTable with names and type specified
 //func (db *Database) CreateTable(tablename string, Columns []Column) {
