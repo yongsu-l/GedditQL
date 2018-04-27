@@ -3,6 +3,7 @@ package interpreter
 import (
 	"bytes"
 	"strconv"
+	"strings"
 )
 
 // var
@@ -38,33 +39,33 @@ func DescribeSelect(tokens []string) *SelectOptions {
 
 	// get the table refs
 	tableRefs := []string{}
-	if tq.Current() == FROM {
+	if strings.ToLower(tq.Current()) == FROM {
 		tableRefs = getTableRefs(tq.Next())
 	}
 
 	// get the WHERE clause
 	var condition func(map[string]string) (bool, error)
-	if tq.Current() == WHERE {
+	if strings.ToLower(tq.Current()) == WHERE {
 		condition = getCondition(tq.Next(), sa)
 	}
 
 	// get the ORDER BY clause
 	order, by := "", ASC
-	if tq.Current() == ORDER {
-		order = tq.Next().Next().Current()
+	if strings.ToLower(tq.Current()) == ORDER {
+		order = strings.ToLower(tq.Next().Next().Current())
 		tq.Next()
 
 		// checks for the optional ASC or DESC (default to ASC if absent)
-		if tq.Current() == ASC || tq.Current() == DESC {
-			by = tq.Current()
+		if strings.ToLower(tq.Current()) == ASC || strings.ToLower(tq.Current()) == DESC {
+			by = strings.ToLower(tq.Current())
 			tq.Next()
 		}
 	}
 
 	// get the LIMIT clause
 	limit := 0
-	if tq.Current() == LIMIT {
-		limit, _ = strconv.Atoi(tq.Next().Current())
+	if strings.ToLower(tq.Current()) == LIMIT {
+		limit, _ = strconv.Atoi(strings.ToLower(tq.Next().Current()))
 	}
 
 	return &SelectOptions{
@@ -82,7 +83,7 @@ func DescribeSelect(tokens []string) *SelectOptions {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func getDistinct(tq *queue) bool {
-	if tq.Current() == DISTINCT {
+	if strings.ToLower(tq.Current()) == DISTINCT {
 		tq.Next()
 		return true
 	}
@@ -91,7 +92,7 @@ func getDistinct(tq *queue) bool {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func getAll(tq *queue) bool {
-	if tq.Current() == ALL {
+	if strings.ToLower(tq.Current()) == ALL {
 		tq.Next()
 		return true
 	}
@@ -101,7 +102,7 @@ func getAll(tq *queue) bool {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func getColumnRef(tq *queue) string {
 	s := tq.Current()
-	if tq.Next().Current() == DOT {
+	if strings.ToLower(tq.Next().Current()) == DOT {
 		s += tq.Current() + tq.Next().Current()
 		tq.Next()
 	}
@@ -120,7 +121,7 @@ func getColumnRefs(tq *queue) ([]string, map[string]string, map[string]string) {
 		s := getColumnRef(tq)
 		columnRefs = append(columnRefs, s)
 		// checks for AS clause
-		if tq.Current() == AS {
+		if strings.ToLower(tq.Current()) == AS {
 			a := tq.Next().Current()
 			as[s] = a
 			sa[a] = s
@@ -128,7 +129,7 @@ func getColumnRefs(tq *queue) ([]string, map[string]string, map[string]string) {
 		}
 
 		// checks if there are more columnRefs
-		if tq.Current() == COMMA {
+		if strings.ToLower(tq.Current()) == COMMA {
 			tq.Next()
 		} else {
 			break
@@ -144,7 +145,7 @@ func getTableRefs(tq *queue) []string {
 
 	for {
 		tableRefs = append(tableRefs, tq.Current())
-		if tq.Next().Current() == COMMA {
+		if strings.ToLower(tq.Next().Current()) == COMMA {
 			tq.Next()
 		} else {
 			break
@@ -158,8 +159,8 @@ func getTableRefs(tq *queue) []string {
 func getCondition(tq *queue, sa map[string]string) func(map[string]string) (bool, error) {
 	res := getExpr(tq, sa)
 
-	for tq.Current() == AND || tq.Current() == OR {
-		op := tq.Current()
+	for strings.ToLower(tq.Current()) == AND || strings.ToLower(tq.Current()) == OR {
+		op := strings.ToLower(tq.Current())
 		next := getExpr(tq.Next(), sa)
 		prev := res
 
@@ -208,7 +209,7 @@ func getExpr(tq *queue, sa map[string]string) func(map[string]string) (bool, err
 		}
 	}
 
-	op := tq.Current()
+	op := strings.ToLower(tq.Current())
 
 	isVal2, val2 := getValue(tq.Next())
 	if !isVal2 {
@@ -260,7 +261,7 @@ func getExpr(tq *queue, sa map[string]string) func(map[string]string) (bool, err
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func getValue(tq *queue) (bool, string) {
-	if tq.Current() == SUB {
+	if strings.ToLower(tq.Current()) == SUB {
 		isNumeric, val := getNumeric(tq.Next())
 		return isNumeric, SUB + val
 	}
@@ -270,14 +271,14 @@ func getValue(tq *queue) (bool, string) {
 		return isNumeric, val
 	}
 
-	if tq.Current() == TRUE || tq.Current() == FALSE {
-		val = tq.Current()
+	if strings.ToLower(tq.Current()) == TRUE || strings.ToLower(tq.Current()) == FALSE {
+		val = strings.ToLower(tq.Current())
 		tq.Next()
 		return true, val
 	}
 
-	if tq.Current()[0] == '\'' || tq.Current()[0] == '"' {
-		val = tq.Current()
+	if strings.ToLower(tq.Current())[0] == '\'' || strings.ToLower(tq.Current())[0] == '"' {
+		val = strings.ToLower(tq.Current())
 		tq.Next()
 		return true, val
 	}
@@ -287,10 +288,10 @@ func getValue(tq *queue) (bool, string) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 func getNumeric(tq *queue) (bool, string) {
-	if _, err := strconv.Atoi(tq.Current()); err == nil {
-		n := tq.Current()
-		if tq.Next().Current() == DOT {
-			n = n + DOT + tq.Next().Current()
+	if _, err := strconv.Atoi(strings.ToLower(tq.Current())); err == nil {
+		n := strings.ToLower(tq.Current())
+		if strings.ToLower(tq.Next().Current()) == DOT {
+			n = n + DOT + strings.ToLower(tq.Next().Current())
 			tq.Next()
 			return true, n
 		}
