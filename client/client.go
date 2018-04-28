@@ -1,50 +1,54 @@
 package main
 
 import (
+	"GedditQL/server/storage"
 	"bufio"
+	"encoding/gob"
 	"fmt"
+	"log"
 	"net"
 	"os"
 )
 
 func main() {
+	conn, err := net.Dial("tcp", ":9999")
+	defer conn.Close()
 
-	// Connect to the socket
-	conn, err := net.Dial("tcp", "127.0.0.1:9999")
 	if err != nil {
-		fmt.Println("Error establishing connection:", err.Error())
-		os.Exit(1)
+		log.Fatalln(err)
 	}
-	message, err := bufio.NewReader(conn).ReadString('\n')
-	if err != nil {
-		fmt.Println("Error reading:", err.Error())
-		os.Exit(1)
-	}
-	fmt.Println(message)
+
+	// decoder.Decode(res)
+	// log.Println(res)
 
 	for {
-		// Read input from stdin
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print(">> ")
 		query, err := reader.ReadString('\n')
+		decoder := gob.NewDecoder(conn)
+
 		if err != nil {
-			fmt.Println("Error reading string:", err.Error())
-			os.Exit(1)
-		}
-		if query == "quit\n" {
-			fmt.Println("Quitting...")
+			log.Fatalln(err.Error())
+		} else if query == "quit\n" {
+			fmt.Println("Exiting...")
 			os.Exit(0)
 		}
-		// Send to db server
-		fmt.Fprintf(conn, query+"\n")
-		// Listen for reply
-		message, err := bufio.NewReader(conn).ReadString('\n')
+
+		// Send to query
+		_, err = fmt.Fprintf(conn, query+"\n")
 
 		if err != nil {
-			fmt.Println("Error reading buffer:", err.Error())
-			os.Exit(1)
+			log.Fatal(err.Error())
 		}
 
-		fmt.Println(message)
+		var res storage.Response
+		// log.Print("Hang")
+		err = decoder.Decode(&res)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(res)
 	}
+
 }

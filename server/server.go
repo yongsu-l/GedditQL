@@ -1,8 +1,10 @@
-// Simple TCP Server for GedditQL
+// Package tcpserver provides a tcpserver to accept queries
 package tcpserver
 
 import (
+	"GedditQL/server/storage"
 	"bufio"
+	"encoding/gob"
 	"log"
 	"net"
 )
@@ -10,11 +12,11 @@ import (
 // Client of each connections
 type Client struct {
 	conn   net.Conn
-	Server *server
+	Server *Server
 }
 
 // Server information
-type server struct {
+type Server struct {
 	address                  string
 	onNewClientCallback      func(c *Client)
 	onClientConnectionClosed func(c *Client, err error)
@@ -22,7 +24,8 @@ type server struct {
 }
 
 // Listen indefinitely until client closes connection
-func (c *Client) listen() {
+func (c *Client) Listen() {
+
 	reader := bufio.NewReader(c.conn)
 	for {
 		message, err := reader.ReadString('\n')
@@ -31,17 +34,20 @@ func (c *Client) listen() {
 			c.Server.onClientConnectionClosed(c, err)
 			return
 		}
-		c.Server.onNewMessage(c, message)
+		// log.Print(len(message))
+		if len(message) > 1 {
+			c.Server.onNewMessage(c, message)
+		}
 	}
 }
 
 // Send message back to client
-func (c *Client) Send(message string) error {
-	_, err := c.conn.Write([]byte(message))
-	return err
+func (c *Client) Send(res storage.Response) error {
+	enc := gob.NewEncoder(c.Conn())
+	return enc.Encode(&res)
 }
 
-// Get the connection
+// Conn establishes the connection
 func (c *Client) Conn() net.Conn {
 	return c.conn
 }
@@ -51,23 +57,23 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-// Called right after server starts listening new client
-func (s *server) OnNewClient(callback func(c *Client)) {
+// OnNewClient Called right after server starts listening new client
+func (s *Server) OnNewClient(callback func(c *Client)) {
 	s.onNewClientCallback = callback
 }
 
-// Called right after connection closed
-func (s *server) OnClientConnectionClosed(callback func(c *Client, err error)) {
+// OnClientConnectionClosed Called right after connection closed
+func (s *Server) OnClientConnectionClosed(callback func(c *Client, err error)) {
 	s.onClientConnectionClosed = callback
 }
 
-// Called when Client receives new message
-func (s *server) OnNewMessage(callback func(c *Client, message string)) {
+// OnNewMessage Called when Client receives new message this function will handle all of the query
+func (s *Server) OnNewMessage(callback func(c *Client, query string)) {
 	s.onNewMessage = callback
 }
 
-// Start network server that accepts connections
-func (s *server) Listen() {
+// Listen starts the server listen to listen for incoming ocnnections
+func (s *Server) Listen() {
 	listener, err := net.Listen("tcp", s.address)
 	if err != nil {
 		log.Fatal("Error starting TCP server.")
@@ -78,6 +84,7 @@ func (s *server) Listen() {
 
 	for {
 		conn, err := listener.Accept()
+
 		if err != nil {
 			log.Fatal("Error listening on connection")
 		}
@@ -85,15 +92,15 @@ func (s *server) Listen() {
 			conn:   conn,
 			Server: s,
 		}
-		go client.listen()
+		go client.Listen()
 		s.onNewClientCallback(client)
 	}
 }
 
-// Creates new tcp server instance
-func New(address string) *server {
+// New creates new tcp server instance
+func New(address string) *Server {
 	log.Println("Creating server with address", address)
-	server := &server{
+	server := &Server{
 		address: address,
 	}
 
