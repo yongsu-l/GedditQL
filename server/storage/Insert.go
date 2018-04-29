@@ -1,6 +1,9 @@
 package storage
 
-import "GedditQL/server/interpreter"
+import (
+	"GedditQL/server/interpreter"
+	// "log"
+)
 
 // Insert inserts into the table specified
 func (db *Database) Insert(opts interpreter.InsertOptions) (Response, error) {
@@ -9,12 +12,13 @@ func (db *Database) Insert(opts interpreter.InsertOptions) (Response, error) {
 	var length int
 
 	if _, exists := db.Tables[opts.TableRef]; exists {
-		for _, v := range opts.ColumnRefs {
+		// Only insert if the Table exists
+		for k, v := range opts.ColumnRefs {
 			// Check if column name exists in table
 			if _, exists := db.Tables[opts.TableRef].Rows[v]; exists {
 
 				// Append new value at the end
-				db.Tables[opts.TableRef].Rows[v].Data = append(db.Tables[opts.TableRef].Rows[v].Data, v)
+				db.Tables[opts.TableRef].Rows[v].Data = append(db.Tables[opts.TableRef].Rows[v].Data, opts.Values[k])
 				// Measure length for normalize at end of loop
 				if len(db.Tables[opts.TableRef].Rows[v].Data) > length {
 					length = len(db.Tables[opts.TableRef].Rows[v].Data)
@@ -29,6 +33,10 @@ func (db *Database) Insert(opts interpreter.InsertOptions) (Response, error) {
 	}
 
 	db.normalize(opts.TableRef, length)
+
+	// log.Print(db.Tables[opts.TableRef].Rows["col1"].Data)
+
+	db.Save()
 
 	return t, nil
 }
