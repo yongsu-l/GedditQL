@@ -1,52 +1,54 @@
-Grammar:
+<digit>         := [0-9]
+<int>           := -?<digit>+
+<float>         := -?<digit>+\\.<digit>+
+<bool>          := true|false
+<string>        := \\".+\\"
+<value>         := <string>|<bool>|<float>|<int>
+<values>        := <value>( *, *<value>)*
+<comparator> 	  := \<|\<>|\<=|\>|\>=|=|!=
+<dataType>      := float|int|string|bool
 
-<data_type> 	  := 	"float" | "int" | "bool" | "string"
-<value> 			  := 	string | bool | float | int
-<comparator> 	  := 	< | <> | <= | > | >= | = | !=
-<operator>      :=  + | - | * | / | %
-<table_ref> 	  := 	name
-<column_ref> 	  := 	[ <table_ref>"." ]name
+<name>          := \\w+
+<names>         := <name>( *, *<name>)*
+<tableRef> 	    := <name>
+<tableRefs>     := <tableRef>( *, *<tableRef>)*
+<columnRef> 	  := (<tableRef>\\.)?<name>
+<term> 				  := <value>|<columnRef>
 
-<values>        :=  <value>{ "," <value> }
-<table_refs>    :=  <table_ref>{ "," <table_ref> }
-<column_refs>   :=  <column_ref{ "," <column_ref> }
+<distinct>      := distinct
 
-<term> 				  := 	<value> | <column_ref>
+<selectExpr>    := <term>( *as *<name>)?
+<selectExprs>   := \\*|<selectExpr>( *, *<selectExpr>)*
+<from>          := from *<tableRefs>
 
-<condition>   	:= 	NOT <condition>
-                    | <condition> <comparator> <condition>
-                    | <condition> AND <condition>
-                    | <condition> OR <condition>
+<expr>          := <term> *<comparator> *<term>
+<condition>   	:= <expr>( *(and|or) *<expr>)*
+<where>         := where *<condition>
 
-<select_exprs>  := <term> [ AS name ]{ "," <select_exprs> }
-<order>				  := 	<column_ref> [ ASC | DESC ]
-<select> 			  := 	SELECT [ DISTINCT ] ( "*" | <select_exprs> )
-                    [ FROM <table_refs> ]
-                    [ WHERE <condition> ]
-                    [ ORDER BY <order> ]
-                    [ LIMIT int ]
+<orderType>     := asc|desc
+<order>				  := <columnRef> *<orderType>?
+<orderBy>       := order *by *<order>
 
-<column_defs>   :=  <column_ref> <data_type> 
-                    [ NOT NULL ] 
-                    [ PRIMARY KEY ]
-                    [ UNIQUE ]
-                    [ DEFAULT <value> ]
-                    { "," <column_defs> }
-<create>        :=  CREATE TABLE [ IF NOT EXISTS ] table_ref "(" 
-                      <column_defs>
-                    ")"
+<limit>         := ( *limit *<int>)
 
-<insert>        :=  INSERT INTO <table_ref>
-                    [ "(" <column_refs> ")" ]
-                    VALUES "(" <values> ")"
+<createType>    := table
+<ifNotExists>   := if *not *exists
 
-<set_exprs>     :=  <column_ref>"="<expr>{ "," <set_exprs> }
-<update>        :=  UPDATE <table_ref>
-                    SET <set_exprs>
-                    [ WHERE <condition> ]
+<notNull>       := not *null
+<primaryKey>    := primary *key
+<unique>        := unique
+<default>       := default *<value>
 
-<delete>        :=  DELETE FROM <table_ref>
-                    [ WHERE <condition> ]
-                    [ LIMIT int ]
+<columnDef>     := <columnRef> *<dataType> *<notNull>? *<primaryKey>? *<unique>? *<default>?
+<columnDefs>    := <columnDef>( *, *<columnDef>)*
 
-<query>         :=  ( <select> | <create> | <insert> | <update> | <delete> )";"
+<setExpr>       := <columnRef> *= *<value>
+<setExprs>      := <setExpr>( *, *<setExpr>)*
+
+<select> 			  := select *<distinct>? *<selectExprs> *<from>? *<where>? *<orderBy>? *<limit>?
+<create>        := create *<createType> *<ifNotExists>? *<tableRef> *\\( *<columnDefs> *\\)
+<insert>        := insert *into *<tableRef>( *\\( *<names> *\\))? *values *\\( *<values> *\\)
+<update>        := update *<tableRef> *set *<setExprs> *<where>?
+<delete>        := delete *from *<tableRef> *<where>? *<limit>?
+
+<query>         := (<select>|<create>|<insert>|<update>|<delete>) *;
