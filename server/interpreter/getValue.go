@@ -23,7 +23,7 @@ func getValue(tq *queue) (bool, string, string) {
 	}
 
 	if strings.ToLower(tq.Current())[0] == '"' {
-		val = strings.ToLower(tq.Current())
+		val = tq.Current()
 		tq.Next()
 		return true, val, "string"
 	}
