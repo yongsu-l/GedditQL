@@ -2,7 +2,7 @@ package storage
 
 import (
 	"GedditQL/server/interpreter"
-	//"log"
+	"GedditQL/server/parser"
 	"os"
 	"testing"
 )
@@ -10,7 +10,7 @@ import (
 var (
 	db      *Database
 	dir     = "test"
-	tblName = "Test Table"
+	tblName = "testTbl"
 	col1    = "col1"
 	col2    = "col2"
 )
@@ -50,7 +50,7 @@ func TestNew(t *testing.T) {
 // Test for writing and reading to db
 func TestWriteAndRead(t *testing.T) {
 	// Write to table first and then write to db after writing to data
-	data := &Data{Type: "string"}
+	data := &Data{DataType: "string"}
 	r1 := make(map[string]*Data)
 	r1[col1] = data
 	r1[col2] = data
@@ -110,94 +110,95 @@ func TestFrom(t *testing.T) {
 
 }
 
-func TestColumnNames(t *testing.T) {
-	db.ColumnNames("Test")
+// func TestInsertInto(t *testing.T) {
+// 	insertion := make(map[string]string)
+//
+// 	insertion[col1] = "hello"
+// 	insertion[col2] = "world"
+//
+// 	db.InsertInto(tblName, insertion)
+//
+// 	insertion = make(map[string]string)
+// 	insertion[col1] = "second round"
+//
+// 	db.InsertInto(tblName, insertion)
+// }
+
+func TestInsert(t *testing.T) {
+	opts := interpreter.InsertOptions{
+		TableRef:   tblName,
+		ColumnRefs: []string{col1, col2},
+		Values:     []string{"\"hello\"", "\"world\""},
+		ValueTypes: []string{"string", "string"},
+	}
+
+	db.Insert(opts)
+
+	// t.Log(db.Tables[tblName])
+
+	//t.Log(db.Tables[tblName].Rows[col1].Data)
 }
 
-func TestInsertInto(t *testing.T) {
-	insertion := make(map[string]string)
+func TestColumnNames(t *testing.T) {
+	//db.ColumnNames("Test")
+	//t.Log(db.ColumnNames("Test"))
+	// t.Log(db.Tables[tblName].Rows[col1])
+}
 
-	insertion[col1] = "hello"
-	insertion[col2] = "world"
+func TestUpdate(t *testing.T) {
 
-	db.InsertInto(tblName, insertion)
+	query := "UPDATE testTbl SET col1 = \"NEW\" WHERE col2 = \"World\";"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		// Get the Update opts with the query
+		t.Log(r)
+		opts := interpreter.DescribeUpdate(r)
+		// test := make(map[string]string)
+		// test["col1"] = "\"Hello\""
+		// test["col2"] = "\"world\""
+		// t.Log(opts.Condition(test))
+		db.Update(opts)
+	}
 
-	insertion = make(map[string]string)
-	insertion[col1] = "second round"
+	t.Log(db.Tables[tblName].Rows[col1])
 
-	db.InsertInto(tblName, insertion)
+	// db.Update(opts)
+
+	// t.Log(opts)
+
+	// for k, v := range db.Tables[tblName].Rows {
+	// 	t.Log(k, v)
+	// }
+
+	// t.Log(db.Tables[tblName].Rows[col1])
+}
+
+func TestDelete(t *testing.T) {
+
+	t.Log(db.Tables[tblName].Rows["col2"])
+
+	query := "DELETE FROM testTbl WHERE col2 = \"World\";"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		// Get the Update opts with the query
+		// t.Log(r)
+		opts := interpreter.DescribeDelete(r)
+		// t.Log(opts)
+		// test := make(map[string]string)
+		// test["col1"] = "\"Hello\""
+		// test["col2"] = "\"world\""
+		// t.Log(opts.Condition(test))
+		db.Delete(opts)
+	}
+
+	t.Log(db.Tables[tblName].Rows["col2"])
 }
 
 // func TestSelect(t *testing.T) {
-//
-// 	colNames := []string{col1, "Test column"}
-//
-// 	if _, err := db.Select(colNames, tblName); err == nil {
-// 		t.Error("Should spit error because column doesn't exist")
-// 	}
-//
-// 	colNames = []string{col1, col2}
-//
-// 	if tbl, err := db.Select(colNames, tblName); err != nil {
-// 		t.Error("Shouldn't spit out error because columns exist")
-// 	} else if len(tbl.Data) != 2 {
-// 		t.Error("Should be returning two rows of data set")
-// 	}
+// 	// query := "SELECT * FROM \"Test Table\";"
 // }
-
-func TestSelect(t *testing.T) {
-	opts := interpreter.SelectOptions{}
-	opts.TableRefs = append(opts.TableRefs, tblName)
-
-	opts.All = true
-
-	//log.Println(opts)
-
-	if _, err := db.Select(opts); err != nil {
-		t.Fatal(err)
-	}
-
-	opts.Distinct = true
-
-	insertion := make(map[string]string)
-
-	insertion[col1] = "hello"
-	insertion[col2] = "world"
-
-	db.InsertInto(tblName, insertion)
-
-	if tbl, err := db.Select(opts); err != nil {
-		t.Fatal("Error selecting")
-	} else if len(tbl.Data) != 2 {
-		t.Fatal("Error choosing distinct")
-	}
-
-	opts = interpreter.SelectOptions{
-		TableRefs:  []string{tblName},
-		ColumnRefs: []string{col1, col2},
-	}
-
-	if tbl, err := db.Select(opts); err != nil {
-		t.Fatal(err)
-	} else {
-		t.Log(tbl)
-	}
-
-	// t.Log(opts.As)
-	opts.As = make(map[string]string)
-	opts.As[col1] = "Change Col"
-
-	if tbl, err := db.Select(opts); err != nil {
-		t.Fatal(err)
-	} else if tbl.Names[0] != "Change Col" {
-		t.Fatal("Failed to change column name")
-	} else {
-		t.Log(tbl)
-	}
-
-	t.Log(opts.Limit)
-
-}
 
 func createDB() error {
 	var err error

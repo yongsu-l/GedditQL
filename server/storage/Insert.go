@@ -35,6 +35,7 @@ func (db *Database) Insert(opts interpreter.InsertOptions) (Response, error) {
 	db.normalize(opts.TableRef, length)
 
 	// log.Print(db.Tables[opts.TableRef].Rows["col1"].Data)
+	db.Tables[opts.TableRef].Length = length
 
 	db.Save()
 
