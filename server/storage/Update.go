@@ -24,16 +24,19 @@ func (db *Database) Update(opts *interpreter.UpdateOptions) (Response, error) {
 				tmp[k] = v.Data[i]
 			}
 
-			if chk, err := opts.Condition(tmp); err != nil {
-				return Response{}, &errorString{"Error checking row"}
-			} else if chk {
-				// Update value at tbl if true
-				for k, v := range opts.ValueMap {
-					tmpTbl.Rows[k].Data[i] = v
-					tmpTbl.Rows[k].DataType = opts.TypeMap[v]
+			// Check if condition is nil
+			if opts.Condition != nil {
+				if chk, err := opts.Condition(tmp); err != nil {
+					return Response{}, &errorString{"Error checking row"}
+				} else if chk {
+					// Update value at tbl if true
+					for k, v := range opts.ValueMap {
+						tmpTbl.Rows[k].Data[i] = v
+						tmpTbl.Rows[k].DataType = opts.TypeMap[v]
+					}
+				} else {
+					log.Print(chk)
 				}
-			} else {
-				log.Print(chk)
 			}
 		}
 
