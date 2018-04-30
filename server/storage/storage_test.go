@@ -125,18 +125,13 @@ func TestFrom(t *testing.T) {
 // }
 
 func TestInsert(t *testing.T) {
-	opts := interpreter.InsertOptions{
-		TableRef:   tblName,
-		ColumnRefs: []string{col1, col2},
-		Values:     []string{"\"hello\"", "\"world\""},
-		ValueTypes: []string{"string", "string"},
+	query := "INSERT INTO testTbl (col1, col2) VALUES (\"hello\", \"world\");"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		opts := interpreter.DescribeInsert(r)
+		t.Log(db.Insert(opts))
 	}
-
-	db.Insert(opts)
-
-	// t.Log(db.Tables[tblName])
-
-	//t.Log(db.Tables[tblName].Rows[col1].Data)
 }
 
 func TestColumnNames(t *testing.T) {
@@ -183,14 +178,6 @@ func TestSelect(t *testing.T) {
 		// Get the Update opts with the query
 		// t.Log(r)
 		opts := interpreter.DescribeSelect(r)
-		// t.Log(db.Tables[tblName].Length)
-		// t.Log(opts)
-		// test := make(map[string]string)
-		// test["col1"] = "\"Hello\""
-		// test["col2"] = "\"world\""
-		// t.Log(opts.Condition(test))
-		// t.Log(opts.Condition(test))
-		// t.Log(opts.All)
 		res, err := db.Select(opts)
 		if err != nil {
 			t.Fatal("Should not be expecting any errors")
@@ -203,16 +190,16 @@ func TestSelect(t *testing.T) {
 	}
 
 	//Second query where there will be an error
-	query = "SELECT ERROR FROM testTbl where col1 =\"hello\";"
-	if r, err := parser.Tokenize(query); err != nil {
-		t.Fatal(err)
-	} else {
-		opts := interpreter.DescribeSelect(r)
-		_, err := db.Select(opts)
-		if err == nil {
-			t.Fatal("Should be expected error")
-		}
-	}
+	// query = "SELECT ERROR FROM testTbl where col1 =\"hello\";"
+	// if r, err := parser.Tokenize(query); err != nil {
+	// 	t.Fatal(err)
+	// } else {
+	// 	opts := interpreter.DescribeSelect(r)
+	// 	_, err := db.Select(opts)
+	// 	if err == nil {
+	// 		t.Fatal("Should be expected error")
+	// 	}
+	// }
 
 }
 
