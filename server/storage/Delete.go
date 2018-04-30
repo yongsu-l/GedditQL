@@ -1,6 +1,9 @@
 package storage
 
-import "GedditQL/server/interpreter"
+import (
+	"GedditQL/server/interpreter"
+	"log"
+)
 
 // Delete deletes from the table where the condition is specified
 func (db *Database) Delete(opts *interpreter.DeleteOptions) (Response, error) {
@@ -43,6 +46,8 @@ func (db *Database) Delete(opts *interpreter.DeleteOptions) (Response, error) {
 					tmp[k] = v.Data[i]
 				}
 
+				log.Print(tmp)
+
 				// Check against condition
 				if chk, err := opts.Condition(tmp); err != nil {
 					return Response{}, &errorString{"Error checking row"}
@@ -56,6 +61,7 @@ func (db *Database) Delete(opts *interpreter.DeleteOptions) (Response, error) {
 			}
 		}
 	} else {
+		log.Print("error")
 		return Response{}, &errorString{"Table doesn't exist in db"}
 	}
 
