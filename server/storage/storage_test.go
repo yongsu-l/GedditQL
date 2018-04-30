@@ -152,7 +152,7 @@ func TestUpdate(t *testing.T) {
 		t.Fatal(err)
 	} else {
 		// Get the Update opts with the query
-		t.Log(r)
+		// t.Log(r)
 		opts := interpreter.DescribeUpdate(r)
 		// test := make(map[string]string)
 		// test["col1"] = "\"Hello\""
@@ -161,7 +161,7 @@ func TestUpdate(t *testing.T) {
 		db.Update(opts)
 	}
 
-	t.Log(db.Tables[tblName].Rows[col1])
+	// t.Log(db.Tables[tblName].Rows[col1])
 
 	// db.Update(opts)
 
@@ -174,11 +174,53 @@ func TestUpdate(t *testing.T) {
 	// t.Log(db.Tables[tblName].Rows[col1])
 }
 
+func TestSelect(t *testing.T) {
+
+	query := "SELECT col1 FROM testTbl where col1 =\"hello\";"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		// Get the Update opts with the query
+		// t.Log(r)
+		opts := interpreter.DescribeSelect(r)
+		// t.Log(db.Tables[tblName].Length)
+		// t.Log(opts)
+		// test := make(map[string]string)
+		// test["col1"] = "\"Hello\""
+		// test["col2"] = "\"world\""
+		// t.Log(opts.Condition(test))
+		// t.Log(opts.Condition(test))
+		// t.Log(opts.All)
+		res, err := db.Select(opts)
+		if err != nil {
+			t.Fatal("Should not be expecting any errors")
+		} else if res.Names[0] != "col1" {
+			t.Fatal("Column returned should only be col1")
+		} else if res.RowsAffected != 1 {
+			t.Fatal("Expected only one row returned")
+		}
+		t.Log(res)
+	}
+
+	//Second query where there will be an error
+	query = "SELECT ERROR FROM testTbl where col1 =\"hello\";"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		opts := interpreter.DescribeSelect(r)
+		_, err := db.Select(opts)
+		if err == nil {
+			t.Fatal("Should be expected error")
+		}
+	}
+
+}
+
 func TestDelete(t *testing.T) {
 
-	t.Log(db.Tables[tblName].Rows["col2"])
+	// t.Log(db.Tables[tblName].Rows["col2"])
 
-	query := "DELETE FROM testTbl WHERE col2 = \"World\";"
+	query := "DELETE FROM testTbl WHERE col2 = \"world\";"
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
@@ -191,14 +233,13 @@ func TestDelete(t *testing.T) {
 		// test["col2"] = "\"world\""
 		// t.Log(opts.Condition(test))
 		db.Delete(opts)
+		if db.Tables[tblName].Length > 0 || len(db.Tables[tblName].Rows[col2].Data) > 0 {
+			t.Fatal("Failed to delete row")
+		}
 	}
 
-	t.Log(db.Tables[tblName].Rows["col2"])
+	// t.Log(db.Tables[tblName].Rows["col2"])
 }
-
-// func TestSelect(t *testing.T) {
-// 	// query := "SELECT * FROM \"Test Table\";"
-// }
 
 func createDB() error {
 	var err error

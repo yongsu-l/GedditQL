@@ -26,14 +26,16 @@ func (db *Database) Delete(opts *interpreter.DeleteOptions) (Response, error) {
 					}
 
 					// Check against condition
-					if chk, err := opts.Condition(tmp); err != nil {
-						return Response{}, &errorString{"Error checking row"}
-					} else if chk {
-						// Delete value at row if true
-						for k := range tmp {
-							db.Tables[opts.TableRef].Rows[k].Data = append(db.Tables[opts.TableRef].Rows[k].Data[:i], db.Tables[opts.TableRef].Rows[k].Data[i+1:]...)
+					if opts.Condition != nil {
+						if chk, err := opts.Condition(tmp); err != nil {
+							return Response{}, &errorString{"Error checking row"}
+						} else if chk {
+							// Delete value at row if true
+							for k := range tmp {
+								db.Tables[opts.TableRef].Rows[k].Data = append(db.Tables[opts.TableRef].Rows[k].Data[:i], db.Tables[opts.TableRef].Rows[k].Data[i+1:]...)
+							}
+							db.Tables[opts.TableRef].Length = db.Tables[opts.TableRef].Length - 1
 						}
-						db.Tables[opts.TableRef].Length = db.Tables[opts.TableRef].Length - 1
 					}
 				}
 			}
@@ -48,15 +50,17 @@ func (db *Database) Delete(opts *interpreter.DeleteOptions) (Response, error) {
 
 				log.Print(tmp)
 
-				// Check against condition
-				if chk, err := opts.Condition(tmp); err != nil {
-					return Response{}, &errorString{"Error checking row"}
-				} else if chk {
-					// Delete value at row if true
-					for k := range tmp {
-						db.Tables[opts.TableRef].Rows[k].Data = append(db.Tables[opts.TableRef].Rows[k].Data[:i], db.Tables[opts.TableRef].Rows[k].Data[i+1:]...)
+				if opts.Condition != nil {
+					// Check against condition
+					if chk, err := opts.Condition(tmp); err != nil {
+						return Response{}, &errorString{"Error checking row"}
+					} else if chk {
+						// Delete value at row if true
+						for k := range tmp {
+							db.Tables[opts.TableRef].Rows[k].Data = append(db.Tables[opts.TableRef].Rows[k].Data[:i], db.Tables[opts.TableRef].Rows[k].Data[i+1:]...)
+						}
+						db.Tables[opts.TableRef].Length = db.Tables[opts.TableRef].Length - 1
 					}
-					db.Tables[opts.TableRef].Length = db.Tables[opts.TableRef].Length - 1
 				}
 			}
 		}
