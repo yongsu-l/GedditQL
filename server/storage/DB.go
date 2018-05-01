@@ -36,7 +36,22 @@ func New(dir string) (*Database, error) {
 		// Then check if the filename is already in the directory
 		if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
 			log.Printf("File already exists in dir: %s", filepath.Join(dir, filename))
-			return &db, err
+			// Load file if exists
+			err = db.ReadAll()
+			// if err != nil {
+			// 	log.Fatal(err.Error())
+			// }
+			if err != nil {
+				if err.Error() == "EOF" {
+					log.Print("EOF Error, removing and creating file")
+					os.Remove(filepath.Join(dir, filename))
+					return New(dir)
+				}
+				return &db, err
+			} else {
+				db.ReadAll()
+				return &db, err
+			}
 		}
 		// Create file if file doesn't exist
 		log.Printf("Creating file at %s", filepath.Join(dir, filename))
@@ -62,12 +77,25 @@ func New(dir string) (*Database, error) {
 	}
 	file.Close()
 	return &db, err
-
 }
 
 // ReadAll from file
 func (db *Database) ReadAll() error {
 	file, err := os.Open(filepath.Join(db.Dir, db.File))
+	if err == nil {
+		decoder := gob.NewDecoder(file)
+		err = decoder.Decode(db)
+	} else {
+		log.Fatal(err)
+	}
+	file.Close()
+	return err
+}
+
+// Load loads the file from the specified directory
+func (db *Database) Load() error {
+
+	file, err := os.Open(db.Dir)
 	if err == nil {
 		decoder := gob.NewDecoder(file)
 		err = decoder.Decode(db)
@@ -84,6 +112,8 @@ func (db *Database) Save() error {
 	if err == nil {
 		encoder := gob.NewEncoder(file)
 		encoder.Encode(db)
+	} else {
+		log.Fatal("Encode error:", err)
 	}
 	file.Close()
 	return err
