@@ -1,9 +1,12 @@
 package storage
 
-import "GedditQL/server/interpreter"
+import (
+	"GedditQL/server/interpreter"
+	"log"
+)
 
 // Create creates a table specified
-func (db *Database) Create(opts interpreter.CreateOptions) (Response, error) {
+func (db *Database) Create(opts *interpreter.CreateOptions) (Response, error) {
 
 	t := Response{}
 
@@ -26,16 +29,18 @@ func (db *Database) Create(opts interpreter.CreateOptions) (Response, error) {
 				db.Save()
 			}
 		} else {
-			tmpTable := Table{}
+			emptyRow := make(map[string]*Data)
+			db.Tables[opts.TableRef] = &Table{Rows: emptyRow, Length: 0}
 
 			for _, v := range opts.ColumnDefs {
-				tmpTable.Rows[v.Name] = &Data{DataType: v.DataType}
+				db.Tables[opts.TableRef].Rows[v.Name] = &Data{DataType: v.DataType}
 			}
 
-			db.Tables[opts.TableRef] = &tmpTable
 			db.Save()
+			log.Print(db.Tables[opts.TableRef])
+			t.RowsAffected = 1
 		}
-	} else if opts.Type == "database" {
+	} else if opts.Type == "view" {
 		// Implement Database creation
 	}
 

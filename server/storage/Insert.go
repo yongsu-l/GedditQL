@@ -6,7 +6,7 @@ import (
 )
 
 // Insert inserts into the table specified
-func (db *Database) Insert(opts interpreter.InsertOptions) (Response, error) {
+func (db *Database) Insert(opts *interpreter.InsertOptions) (Response, error) {
 
 	t := Response{}
 	var length int

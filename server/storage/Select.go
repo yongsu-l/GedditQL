@@ -3,6 +3,7 @@ package storage
 import (
 	"GedditQL/server/interpreter"
 	"log"
+	"sort"
 )
 
 // Select returns the table with the columns specified
@@ -79,9 +80,12 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 							tmp[k] = v.Data[i]
 						}
 
+						// log.Print(tmp)
+
 						// Check if the condition function isn't nil
 						if chk, err := opts.Condition(tmp); err != nil {
-							return Response{}, &errorString{"Error checking row"}
+							// log.Print("HELLO")
+							return Response{}, &errorString{err.Error()}
 						} else if chk {
 							for _, v := range opts.ColumnRefs {
 								// log.Print(v)
@@ -143,6 +147,28 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 				t.Data = t.Data[opts.Limit:]
 			}
 
+			if opts.Order != "" && len(t.Data) > 1 {
+				if opts.By == "ASC" || opts.By == "" {
+					// Order by asc on default
+					for k, v := range t.Names {
+						if v == opts.Order {
+							sort.SliceStable(t.Data, func(i, j int) bool {
+								return t.Data[i][k] < t.Data[j][k]
+							})
+						}
+					}
+				} else {
+					// Order by desc
+					for k, v := range t.Names {
+						if v == opts.Order {
+							sort.SliceStable(t.Data, func(i, j int) bool {
+								return t.Data[i][k] > t.Data[j][k]
+							})
+						}
+					}
+				}
+			}
+
 			// log.Println(t.Data[1][0])
 
 			return t, nil
@@ -150,7 +176,7 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 		// Return error if table doesn't exist
 		return Response{}, &errorString{"Table doesn't exist"}
 	}
-	// Parse the column refs
+	// Parse the column refs if there are no tables specified
 	for _, v := range opts.ColumnRefs {
 		var empty []string
 		t.Data = append(t.Data, empty)
