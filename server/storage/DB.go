@@ -2,12 +2,11 @@ package storage
 
 import (
 	"encoding/gob"
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
 )
-
-const filename = "storage.gob"
 
 type errorString struct {
 	s string
@@ -18,7 +17,21 @@ func (e *errorString) Error() string {
 }
 
 // New Initializes a struct of DB and creates file and directory if needed
-func New(dir string) (*Database, error) {
+func New(args ...string) (*Database, error) {
+
+	if len(args) == 0 {
+		return &Database{}, errors.New("Not enough arguments")
+	}
+
+	var dir, filename string
+
+	if len(args) == 1 {
+		dir = args[0]
+		filename = "storage.gob"
+	} else {
+		dir = args[0]
+		filename = args[1]
+	}
 
 	// Clean the directory that we will be working in
 	dir = filepath.Clean(dir)

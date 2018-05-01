@@ -20,7 +20,7 @@ func main() {
 	Linter := linter.NewLinter("./server/grammar.txt")
 
 	// Initialize a new db
-	db, _ := storage.New("test")
+	db, _ := storage.New("db", "store")
 
 	server.OnNewClient(func(c *tcpserver.Client) {
 		log.Println("New connection established")

@@ -6,6 +6,7 @@ type Response struct {
 	DataTypes    []string
 	Data         [][]string
 	RowsAffected int
+	Result       string
 	Err          string
 }
 

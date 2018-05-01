@@ -3,6 +3,7 @@ package storage
 import (
 	"GedditQL/server/interpreter"
 	// "log"
+	"fmt"
 )
 
 // Insert inserts into the table specified
@@ -38,6 +39,8 @@ func (db *Database) Insert(opts *interpreter.InsertOptions) (Response, error) {
 	db.Tables[opts.TableRef].Length = length
 
 	db.Save()
+
+	t.Result = fmt.Sprintf("Inserted values into: %s", opts.TableRef)
 
 	return t, nil
 }

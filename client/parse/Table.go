@@ -3,21 +3,30 @@ package parse
 import (
 	"GedditQL/server/storage"
 	"fmt"
-	"github.com/syohex/go-texttable"
+	"github.com/Yong-L/go-texttable"
 )
 
 // Table parses the result into a table and outputs to the console
 func Table(res storage.Response) error {
 
 	if res.Err == "" {
-		tbl := &texttable.TextTable{}
-		tbl.SetHeaderArr(res.Names)
 
-		for _, v := range res.Data {
-			tbl.AddRowArr(v)
+		tbl := &texttable.TextTable{}
+		if len(res.Names) != 0 {
+			tbl.SetHeaderArr(res.Names)
 		}
 
-		fmt.Println(tbl.Draw())
+		if len(res.Data) != 0 {
+			for _, v := range res.Data {
+				tbl.AddRowArr(v)
+			}
+		}
+
+		if len(res.Names) != 0 || len(res.Data) != 0 {
+			fmt.Println(tbl.Draw())
+		}
+
+		fmt.Println(res.Result)
 
 	} else {
 		fmt.Println(res.Err)
