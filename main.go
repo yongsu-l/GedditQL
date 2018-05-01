@@ -2,32 +2,55 @@ package main
 
 import (
 	"GedditQL/server"
-	"GedditQL/server/interpreter"
+	// "GedditQL/server/interpreter"
+	"GedditQL/server/linter"
 	"GedditQL/server/parser"
+	"GedditQL/server/storage"
+	// "encoding/gob"
 	"log"
+	"strings"
+	// "reflect"
 )
 
 func main() {
+	// Start logging based on line
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	server := tcpserver.New("localhost:9999")
+
+	Linter := linter.NewLinter("./server/grammar.txt")
+
+	// Initialize a new db
+	db, _ := storage.New("test")
 
 	server.OnNewClient(func(c *tcpserver.Client) {
 		log.Println("New connection established")
-		c.Send("Hello, welcome to GedditQL\n")
+
+		// res := storage.Response{Msg: "Hello, welcome to GedditQL"}
+
+		// c.Send(res)
 	})
 
 	server.OnNewMessage(func(c *tcpserver.Client, query string) {
-		// fmt.Print(message)
-		log.SetFlags(log.LstdFlags | log.Lshortfile)
-		if r, err := parser.Tokenize(query); err != nil {
-			c.Send("ERROR in tokenize\n")
-		} else {
-			// If there is an error with syntax, send the error to client
-			if err := interpreter.CheckSyntax(r); err != nil {
-				c.Send(err.Error() + "\n")
+		log.Print(query)
+
+		if chk := Linter(strings.TrimSpace(query), "query"); chk {
+			// If query has valid syntax, tokenize the evaluate
+			log.Print("WORKS")
+			if r, err := parser.Tokenize(query); err != nil {
+				res := storage.Response{Err: err.Error()}
+				c.Send(res)
 			} else {
-				c.Send("Success\n")
-				log.Println(interpreter.DescribeSelect(r))
+				res, err := db.EvaluateQuery(r)
+				if err = c.Send(res); err != nil {
+					log.Fatal(err)
+				} else {
+					// No error
+				}
 			}
+		} else {
+			log.Print(chk)
+			res := storage.Response{Err: "Invalid Syntax"}
+			c.Send(res)
 		}
 	})
 
