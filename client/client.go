@@ -1,6 +1,7 @@
 package main
 
 import (
+	"GedditQL/client/parse"
 	"GedditQL/server/storage"
 	"bufio"
 	"encoding/gob"
@@ -48,7 +49,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Println(res)
+		parse.Table(res)
 	}
 
 }
