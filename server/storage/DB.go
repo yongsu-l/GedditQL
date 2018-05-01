@@ -48,10 +48,10 @@ func New(dir string) (*Database, error) {
 					return New(dir)
 				}
 				return &db, err
-			} else {
-				db.ReadAll()
-				return &db, err
 			}
+			log.Print("Loading file...")
+			db.ReadAll()
+			return &db, err
 		}
 		// Create file if file doesn't exist
 		log.Printf("Creating file at %s", filepath.Join(dir, filename))
