@@ -34,7 +34,7 @@ func NewLinter(filename string) func(string, string) bool {
 	return func(s string, entry string) bool {
 		re := reMap[entry]
 		linter := regexp.MustCompile("^" + re + "$")
-		if !linter.MatchString(strings.ToLower(s)) {
+		if !linter.MatchString(strings.TrimSpace(strings.ToLower(s))) {
 			return false
 		}
 		return true
@@ -43,7 +43,7 @@ func NewLinter(filename string) func(string, string) bool {
 
 func parseRule(s string) (string, string) {
 	split := strings.Split(s, ":=")
-	name := strings.TrimSpace(split[0])
+	name := strings.TrimSpace(split[0]) 
 	return name[1 : len(name)-1], strings.TrimSpace(split[1])
 }
 
