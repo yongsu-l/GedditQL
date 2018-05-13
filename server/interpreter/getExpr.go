@@ -1,6 +1,8 @@
 package interpreter
 
-import "strings"
+import (
+	"strings"
+)
 
 func getExpr(tq *queue, sa map[string]string) func(map[string]string) (bool, error) {
 	var (
@@ -37,12 +39,13 @@ func getExpr(tq *queue, sa map[string]string) func(map[string]string) (bool, err
 	}
 
 	return func(dict map[string]string) (bool, error) {
+		vala, valb := val1, val2
 		if !isVal1 {
 			val, ok := dict[val1]
 			if !ok {
 				return false, newError2(ErrNoColRef, curr1, pos1)
 			}
-			val1 = val
+			vala = val
 		}
 
 		if !isVal2 {
@@ -50,22 +53,22 @@ func getExpr(tq *queue, sa map[string]string) func(map[string]string) (bool, err
 			if !ok {
 				return false, newError2(ErrNoColRef, curr2, pos2)
 			}
-			val2 = val
+			valb = val
 		}
 
 		switch op {
 		case "<":
-			return val1 < val2, nil
+			return vala < valb, nil
 		case "<>", "!=":
-			return val1 != val2, nil
+			return vala != valb, nil
 		case "<=":
-			return val1 <= val2, nil
+			return vala <= valb, nil
 		case ">":
-			return val1 > val2, nil
+			return vala > valb, nil
 		case ">=":
-			return val1 >= val2, nil
+			return vala >= valb, nil
 		case "=":
-			return val1 == val2, nil
+			return vala == valb, nil
 		default:
 			return false, nil
 		}
