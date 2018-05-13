@@ -246,41 +246,52 @@ func TestSelect(t *testing.T) {
 	// 	t.Log(res)
 	// }
 
-	// query = "SELECT * FROM testTbl;"
-	// if r, err := parser.Tokenize(query); err != nil {
-	// 	t.Fatal(err)
-	// } else {
-	// 	opts := interpreter.DescribeSelect(r)
-	// 	res, _ := db.Select(opts)
-	// 	t.Log(res)
-	// }
-
-}
-
-func TestDelete(t *testing.T) {
-
-	// t.Log(db.Tables[tblName].Rows["col2"])
-
-	query := "DELETE FROM testTbl WHERE col2 = \"world\";"
+	query = "SELECT * FROM testTbl;"
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
-		// Get the Update opts with the query
-		// t.Log(r)
-		opts := interpreter.DescribeDelete(r)
-		// t.Log(opts)
-		// test := make(map[string]string)
-		// test["col1"] = "\"Hello\""
-		// test["col2"] = "\"world\""
-		// t.Log(opts.Condition(test))
-		db.Delete(opts)
-		if db.Tables[tblName].Length > 0 || len(db.Tables[tblName].Rows[col2].Data) > 0 {
-			t.Fatal("Failed to delete row")
-		}
+		opts := interpreter.DescribeSelect(r)
+		res, _ := db.Select(opts)
+		t.Log(res)
 	}
 
-	// t.Log(db.Tables[tblName].Rows["col2"])
 }
+
+func TestSelectLimit(t *testing.T) {
+	// Check if limit actually limits the data
+	query := "SELECT * FROM testTbl LIMIT 1;"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		opts := interpreter.DescribeSelect(r)
+		t.Log(db.Select(opts))
+	}
+}
+
+// func TestDelete(t *testing.T) {
+//
+// 	// t.Log(db.Tables[tblName].Rows["col2"])
+//
+// 	query := "DELETE FROM testTbl WHERE col2 = \"world\";"
+// 	if r, err := parser.Tokenize(query); err != nil {
+// 		t.Fatal(err)
+// 	} else {
+// 		// Get the Update opts with the query
+// 		// t.Log(r)
+// 		opts := interpreter.DescribeDelete(r)
+// 		// t.Log(opts)
+// 		// test := make(map[string]string)
+// 		// test["col1"] = "\"Hello\""
+// 		// test["col2"] = "\"world\""
+// 		// t.Log(opts.Condition(test))
+// 		db.Delete(opts)
+// 		if db.Tables[tblName].Length > 0 || len(db.Tables[tblName].Rows[col2].Data) > 0 {
+// 			t.Fatal("Failed to delete row")
+// 		}
+// 	}
+//
+// 	// t.Log(db.Tables[tblName].Rows["col2"])
+// }
 
 func createDB() error {
 	var err error
