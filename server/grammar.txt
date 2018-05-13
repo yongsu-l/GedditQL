@@ -5,28 +5,29 @@
 <string>        := \\".+\\"
 <value>         := <string>|<bool>|<float>|<int>
 <values>        := <value>( *, *<value>)*
-<comparator> 	  := \<|\<>|\<=|\>|\>=|=|!=
+<comparator>    := \<|\<>|\<=|\>|\>=|=|!=
 <dataType>      := float|int|string|bool
+<function>      := sum|count
 
 <name>          := \\w+
 <names>         := <name>( *, *<name>)*
-<tableRef> 	    := <name>
+<tableRef>      := <name>
 <tableRefs>     := <tableRef>( *, *<tableRef>)*
-<columnRef> 	  := (<tableRef>\\.)?<name>
-<term> 				  := <value>|<columnRef>
+<columnRef>     := (<tableRef>\\.)?<name>
+<term>          := <value>|<columnRef>
 
 <distinct>      := distinct
-
-<selectExpr>    := <term>( *as *<name>)?
+<functionExpr>  := <function>\\( *<columnRef> *\\)
+<selectExpr>    := (<term>( *as *<name>)?)|<functionExpr>
 <selectExprs>   := \\*|<selectExpr>( *, *<selectExpr>)*
 <from>          := from *<tableRefs>
 
 <expr>          := <term> *<comparator> *<term>
-<condition>   	:= <expr>( *(and|or) *<expr>)*
+<condition>     := <expr>( *(and|or) *<expr>)*
 <where>         := where *<condition>
 
 <orderType>     := asc|desc
-<order>				  := <columnRef> *<orderType>?
+<order>         := <columnRef> *<orderType>?
 <orderBy>       := order *by *<order>
 
 <limit>         := ( *limit *<int>)
@@ -45,7 +46,7 @@
 <setExpr>       := <columnRef> *= *<value>
 <setExprs>      := <setExpr>( *, *<setExpr>)*
 
-<select> 			  := select *<distinct>? *<selectExprs> *<from>? *<where>? *<orderBy>? *<limit>?
+<select>        := select *<distinct>? *<selectExprs> *<from>? *<where>? *<orderBy>? *<limit>?
 <create>        := create *<createType> *<ifNotExists>? *<tableRef> *\\( *<columnDefs> *\\)
 <insert>        := insert *into *<tableRef>( *\\( *<names> *\\))? *values *\\( *<values> *\\)
 <update>        := update *<tableRef> *set *<setExprs> *<where>?

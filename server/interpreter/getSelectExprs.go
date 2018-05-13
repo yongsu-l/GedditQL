@@ -2,14 +2,33 @@ package interpreter
 
 import "strings"
 
-func getSelectExprs(tq *queue) ([]string, map[string]string, map[string]string) {
+func getSelectExprs(tq *queue) ([]string, map[string]string, map[string]string, []string, map[string]string) {
 	columnRefs := []string{}
 	// columnRef: AS
 	as := map[string]string{}
 	// AS: columnRef
 	sa := map[string]string{}
+	// function columns
+	fc := []string{}
+	// function map
+	fm := map[string]string{}
 
 	for {
+		if tq.Ind(1) == LPAREN {
+			f := strings.ToLower(tq.Current())
+			s := getColumnRef(tq.Next().Next())
+
+			fc = append(fc, s)
+			fm[s] = f
+
+			if tq.Next().Current() == COMMA {
+				tq.Next()
+				continue
+			} else {
+				break
+			}
+		}
+
 		s := getColumnRef(tq)
 		columnRefs = append(columnRefs, s)
 		// checks for AS clause
@@ -28,5 +47,5 @@ func getSelectExprs(tq *queue) ([]string, map[string]string, map[string]string) 
 		}
 	}
 
-	return columnRefs, as, sa
+	return columnRefs, as, sa, fc, fm
 }
