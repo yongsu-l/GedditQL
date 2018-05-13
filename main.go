@@ -2,14 +2,11 @@ package main
 
 import (
 	"GedditQL/server"
-	// "GedditQL/server/interpreter"
 	"GedditQL/server/linter"
 	"GedditQL/server/parser"
 	"GedditQL/server/storage"
-	// "encoding/gob"
 	"log"
 	"strings"
-	// "reflect"
 )
 
 func main() {
@@ -24,10 +21,6 @@ func main() {
 
 	server.OnNewClient(func(c *tcpserver.Client) {
 		log.Println("New connection established")
-
-		// res := storage.Response{Msg: "Hello, welcome to GedditQL"}
-
-		// c.Send(res)
 	})
 
 	server.OnNewMessage(func(c *tcpserver.Client, query string) {
@@ -35,16 +28,18 @@ func main() {
 
 		if chk := Linter(strings.TrimSpace(query), "query"); chk {
 			// If query has valid syntax, tokenize the evaluate
-			log.Print("WORKS")
 			if r, err := parser.Tokenize(query); err != nil {
 				res := storage.Response{Err: err.Error()}
 				c.Send(res)
 			} else {
 				res, err := db.EvaluateQuery(r)
+				if err != nil {
+					res.Err = err.Error()
+				}
 				if err = c.Send(res); err != nil {
 					log.Fatal(err)
 				} else {
-					// No error
+					log.Print(err)
 				}
 			}
 		} else {
