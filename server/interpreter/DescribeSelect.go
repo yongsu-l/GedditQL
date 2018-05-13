@@ -22,8 +22,11 @@ func DescribeSelect(tokens []string) *SelectOptions {
 	columnRefs := []string{}
 	as := map[string]string{}
 	sa := map[string]string{}
+	funcCols := []string{}
+	funcMap := map[string]string{}
+
 	if !all {
-		columnRefs, as, sa = getSelectExprs(tq)
+		columnRefs, as, sa, funcCols, funcMap = getSelectExprs(tq)
 	}
 
 	// get the table refs
@@ -62,6 +65,8 @@ func DescribeSelect(tokens []string) *SelectOptions {
 		All:        all,
 		ColumnRefs: columnRefs,
 		As:         as,
+		FuncCols:   funcCols,
+		FuncMap:    funcMap,
 		TableRefs:  tableRefs,
 		Condition:  condition,
 		Order:      order,
