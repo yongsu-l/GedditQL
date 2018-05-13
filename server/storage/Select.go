@@ -145,6 +145,9 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 				}
 
 				if opts.Limit > 0 {
+					if opts.Limit > len(t.Data) {
+						return Response{}, &errorString{"Limit out of range"}
+					}
 					t.Data = t.Data[:opts.Limit]
 				}
 
