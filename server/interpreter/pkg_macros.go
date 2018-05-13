@@ -6,6 +6,8 @@ const (
 	SELECT   = "select"
 	DISTINCT = "distinct"
 	ALL      = "*"
+  SUM      = "sum"
+  COUNT    = "count"
 	AS       = "as"
 	FROM     = "from"
 	WHERE    = "where"
@@ -87,6 +89,8 @@ var (
 	RESERVED = map[string]bool{
 		"select":   true,
 		"distinct": true,
+    "sum":      true,
+    "count":    true,
 		"*":        true,
 		"as":       true,
 		"from":     true,

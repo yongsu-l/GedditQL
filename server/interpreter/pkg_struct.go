@@ -7,6 +7,8 @@ type SelectOptions struct {
 	All        bool
 	ColumnRefs []string
 	As         map[string]string
+	FuncCols   []string
+	FuncMap    map[string]string
 	TableRefs  []string
 	Condition  func(map[string]string) (bool, error)
 	Order      string
@@ -83,4 +85,8 @@ func (q *queue) Current() string {
 
 func (q *queue) Pos() int {
 	return q.p
+}
+
+func (q *queue) Ind(n int) string {
+	return q.q[n]
 }

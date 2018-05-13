@@ -7,6 +7,7 @@
 <values>        := <value>( *, *<value>)*
 <comparator>    := \<|\<>|\<=|\>|\>=|=|!=
 <dataType>      := float|int|string|bool
+<function>      := sum|count
 
 <name>          := \\w+
 <names>         := <name>( *, *<name>)*
@@ -16,8 +17,8 @@
 <term>          := <value>|<columnRef>
 
 <distinct>      := distinct
-
-<selectExpr>    := <term>( *as *<name>)?
+<functionExpr>  := <function>\\( *<columnRef> *\\)
+<selectExpr>    := (<term>( *as *<name>)?)|<functionExpr>
 <selectExprs>   := \\*|<selectExpr>( *, *<selectExpr>)*
 <from>          := from *<tableRefs>
 
