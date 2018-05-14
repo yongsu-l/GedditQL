@@ -2,15 +2,13 @@ package storage
 
 import (
 	"GedditQL/server/interpreter"
-	"log"
+	"errors"
+	"fmt"
 )
 
 // Update updates values where specified in db
 func (db *Database) Update(opts *interpreter.UpdateOptions) (Response, error) {
 	t := Response{}
-
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	// log.Print(opts)
 
 	if _, exists := db.Tables[opts.TableRef]; exists {
 
@@ -27,24 +25,33 @@ func (db *Database) Update(opts *interpreter.UpdateOptions) (Response, error) {
 			// Check if condition is nil
 			if opts.Condition != nil {
 				if chk, err := opts.Condition(tmp); err != nil {
-					return Response{}, &errorString{"Error checking row"}
+					db.Load()
+					return Response{}, errors.New("Error checking row")
 				} else if chk {
 					// Update value at tbl if true
 					for k, v := range opts.ValueMap {
-						tmpTbl.Rows[k].Data[i] = v
-						tmpTbl.Rows[k].DataType = opts.TypeMap[v]
+						// Check if the value exists in db
+						if _, exists := tmpTbl.Rows[k]; exists {
+							tmpTbl.Rows[k].Data[i] = v
+							tmpTbl.Rows[k].DataType = opts.TypeMap[v]
+						} else {
+							// Reload the db from saved file
+							db.Load()
+							return Response{}, errors.New("Column does not exist in DB")
+						}
 					}
-				} else {
-					log.Print(chk)
 				}
 			}
 		}
 
 	} else {
-		return Response{}, &errorString{"Table doesn't exist in DB"}
+		db.Load()
+		return Response{}, errors.New("Table doesn't exist in DB")
 	}
 
 	db.Save()
+
+	t.Result = fmt.Sprintf("Updated table of: %s", opts.TableRef)
 
 	return t, nil
 }

@@ -167,35 +167,6 @@ func TestColumnNames(t *testing.T) {
 	// t.Log(db.Tables[tblName].Rows[col1])
 }
 
-func TestUpdate(t *testing.T) {
-
-	query := "UPDATE testTbl SET col1 = \"NEW\" WHERE col2 = \"World\";"
-	if r, err := parser.Tokenize(query); err != nil {
-		t.Fatal(err)
-	} else {
-		// Get the Update opts with the query
-		// t.Log(r)
-		opts := interpreter.DescribeUpdate(r)
-		// test := make(map[string]string)
-		// test["col1"] = "\"Hello\""
-		// test["col2"] = "\"world\""
-		// t.Log(opts.Condition(test))
-		db.Update(opts)
-	}
-
-	// t.Log(db.Tables[tblName].Rows[col1])
-
-	// db.Update(opts)
-
-	// t.Log(opts)
-
-	// for k, v := range db.Tables[tblName].Rows {
-	// 	t.Log(k, v)
-	// }
-
-	// t.Log(db.Tables[tblName].Rows[col1])
-}
-
 func TestSelect(t *testing.T) {
 
 	query := "SELECT * FROM testTbl;"
@@ -212,7 +183,7 @@ func TestSelect(t *testing.T) {
 	}
 
 	query = "SELECT col1 FROM testTbl where col1 =\"hello\";"
-	t.Log(query)
+	// t.Log(query)
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
@@ -290,6 +261,27 @@ func TestSelectFunction(t *testing.T) {
 			t.Log(res)
 		}
 	}
+}
+
+func TestUpdate(t *testing.T) {
+
+	t.Log(db.Tables["testTbl"].Rows["col1"])
+	t.Log(db.Tables["testTbl"].Rows["col2"])
+
+	query := "UPDATE testTbl SET col2 = \"NEW2\" WHERE col1 = \"anakin\";"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		opts := interpreter.DescribeUpdate(r)
+		if res, err := db.Update(opts); err != nil {
+			t.Fatal(err)
+		} else {
+			t.Log(res)
+		}
+	}
+
+	t.Log(db.Tables["testTbl"].Rows["col1"])
+	t.Log(db.Tables["testTbl"].Rows["col2"])
 }
 
 func createDB() error {
