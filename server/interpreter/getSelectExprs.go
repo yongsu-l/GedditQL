@@ -15,12 +15,20 @@ func getSelectExprs(tq *queue) ([]string, map[string]string, map[string]string, 
 
 	for {
 		if tq.Ind(1) == LPAREN {
-			f := strings.ToLower(tq.Current())
-			s := getColumnRef(tq.Next().Next())
+			if tq.Ind(2) == ALL {
+				f := strings.ToLower(tq.Current())
+				s := tq.Next().Next().Current()
 
-			fc = append(fc, s)
-			fm[s] = f
+				fc = append(fc, s)
+				fm[s] = f
+			} else {
+				f := strings.ToLower(tq.Current())
+				s := getColumnRef(tq.Next().Next())
 
+				fc = append(fc, s)
+				fm[s] = f
+
+			}
 			if tq.Next().Current() == COMMA {
 				tq.Next()
 				continue

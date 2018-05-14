@@ -14,10 +14,14 @@ func checkSelectExprs(tq *queue) error {
 		tk := strings.ToLower(tq.Current())
 		if tk == SUM || tk == COUNT {
 			if strings.ToLower(tq.Ind(1)) == LPAREN {
-				err := checkColumnRef(tq.Next().Next())
+				if tq.Ind(2) == ALL {
+					tq.Next().Next().Next()
+				} else {
+					err := checkColumnRef(tq.Next().Next())
 
-				if err != nil {
-					return newError(ErrIllColRef, tq)
+					if err != nil {
+						return newError(ErrIllColRef, tq)
+					}
 				}
 
 				if strings.ToLower(tq.Current()) == RPAREN {
