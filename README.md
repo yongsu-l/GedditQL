@@ -8,7 +8,41 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-You will need to install golang on your system. 
+You need need golang installed on your system that has a verion of >= 1.8.
+
+### Installing it on your system
+
+Make sure you have the minimum go libraries installed properly in your `$GOPATH`.
+In addition, for the client side application, you would need to install a separate repo listed below.
+
+` go get -u github.com/Yong-L/go-texttable `
+
+### Running it on your system
+
+You need to run two terminal instances to run both the server and the client. The server will be served on `port 8888`. 
+
+To run the server run: `go run main.go` from the root directory.
+
+To run the client run: `go run client/client.go` from the root directory.
+
+### Supported SQL Queries
+
+This database supports very minimal database queries such as 
+
+```
+SELECT
+CREATE
+INSERT
+UPDATE
+DELETE
+```
+
+It also supports minimal function with select statements such as 
+
+```
+SUM
+COUNT
+```
 
 ### TODO 
 
