@@ -21,6 +21,7 @@ func getSelectExprs(tq *queue) ([]string, map[string]string, map[string]string, 
 
 				fc = append(fc, s)
 				fm[s] = f
+				tq.Next()
 			} else {
 				f := strings.ToLower(tq.Current())
 				s := getColumnRef(tq.Next().Next())
