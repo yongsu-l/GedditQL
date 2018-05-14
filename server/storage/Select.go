@@ -151,6 +151,8 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 					t.Data = t.Data[:opts.Limit]
 				}
 
+				log.Println(len(opts.FuncCols))
+
 				if opts.Order != "" && len(t.Data) > 1 {
 					if opts.By == "ASC" || opts.By == "" {
 						// Order by asc on default

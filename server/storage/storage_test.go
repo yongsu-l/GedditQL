@@ -268,6 +268,25 @@ func TestSelectLimit(t *testing.T) {
 	}
 }
 
+func TestSelectFunction(t *testing.T) {
+	// First test sum of columns
+	query := "SELECT SUM(col1) from testTbl LIMIT 1;"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		opts := interpreter.DescribeSelect(r)
+		t.Log(opts)
+	}
+
+	query = "SELECT COUNT(*), test FROM testTbl;"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		opts := interpreter.DescribeSelect(r)
+		t.Log(len(opts.FuncCols))
+	}
+}
+
 // func TestDelete(t *testing.T) {
 //
 // 	// t.Log(db.Tables[tblName].Rows["col2"])
