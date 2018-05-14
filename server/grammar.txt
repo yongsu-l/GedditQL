@@ -17,7 +17,7 @@
 <term>          := <value>|<columnRef>
 
 <distinct>      := distinct
-<functionExpr>  := <function>\\( *<columnRef> *\\)
+<functionExpr>  := <function>\\( *(<columnRef>|\\*) *\\)
 <selectExpr>    := (<term>( *as *<name>)?)|<functionExpr>
 <selectExprs>   := \\*|<selectExpr>( *, *<selectExpr>)*
 <from>          := from *<tableRefs>
