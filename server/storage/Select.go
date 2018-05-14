@@ -250,9 +250,28 @@ func (db *Database) funcInterpret(res *Response, opts *interpreter.SelectOptions
 		} else if opts.FuncMap[v] == "count" {
 
 			tmpColName = append(tmpColName, "COUNT")
+			tmpCount := 0
 			// Append the current length of the data
-			tmp = append(tmp, fmt.Sprint(db.Tables[opts.TableRefs[0]].Length))
-			log.Print(tmp)
+			if opts.Condition != nil {
+
+				for i := 0; i < db.Tables[opts.TableRefs[0]].Length; i++ {
+					tmp := make(map[string]string)
+					for k, v := range db.Tables[opts.TableRefs[0]].Rows {
+						tmp[k] = v.Data[i]
+					}
+					log.Print(i)
+
+					// Check if the condition function isn't nil
+					if chk, err := opts.Condition(tmp); err != nil {
+						return errors.New("Error checking column")
+					} else if chk {
+						tmpCount++
+					}
+				}
+			} else {
+				tmpCount = db.Tables[opts.TableRefs[0]].Length
+			}
+			tmp = append(tmp, fmt.Sprint(tmpCount))
 
 		} else {
 			// There is nothing to do so do nothing
