@@ -2,8 +2,11 @@ package storage
 
 import (
 	"GedditQL/server/interpreter"
+	"errors"
+	"fmt"
 	"log"
 	"sort"
+	"strconv"
 )
 
 // Select returns the table with the columns specified
@@ -15,6 +18,9 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 	if len(opts.TableRefs) > 0 {
 		if len(opts.TableRefs) == 1 {
 			if _, exists := db.Tables[opts.TableRefs[0]]; exists {
+
+				tbl := db.Tables[opts.TableRefs[0]]
+
 				if opts.All {
 					// Ignore columnrefs and loop over the rows
 					if opts.Condition != nil {
@@ -45,7 +51,6 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 										t.Data[i] = append(t.Data[i], v.Data[i])
 									}
 								}
-								t.RowsAffected++
 							}
 						}
 					} else {
@@ -65,13 +70,10 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 									t.Data[k] = append(t.Data[k], v)
 								}
 							}
-							t.RowsAffected++
 						}
 					}
 				} else {
 					// Respect columnrefs
-
-					tbl := db.Tables[opts.TableRefs[0]]
 
 					if opts.Condition != nil {
 						// Check for condition
@@ -81,15 +83,13 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 								tmp[k] = v.Data[i]
 							}
 
-							// log.Print(tmp)
-
-							// Check if the condition function isn't nil
+							// Check for condition
 							if chk, err := opts.Condition(tmp); err != nil {
-								// log.Print("HELLO")
-								return Response{}, &errorString{err.Error()}
+								return Response{}, err
 							} else if chk {
 								for _, v := range opts.ColumnRefs {
-									// log.Print(v)
+
+									// Check if column exists
 									if _, exists := tbl.Rows[v]; exists {
 										if _, exists = opts.As[v]; exists {
 											t.Names = append(t.Names, opts.As[v])
@@ -107,30 +107,27 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 										return Response{}, &errorString{"Column not found"}
 									}
 								}
-								t.RowsAffected++
 							}
 						}
 
 					} else {
 
 						for _, v := range opts.ColumnRefs {
-							if _, exists := db.Tables[opts.TableRefs[0]].Rows[v]; exists {
+							if _, exists := tbl.Rows[v]; exists {
 								// Change name if exists in opts.As map
 								if _, exists := opts.As[v]; exists {
 									t.Names = append(t.Names, opts.As[v])
 								} else {
 									t.Names = append(t.Names, v)
 								}
-								t.DataTypes = append(t.DataTypes, db.Tables[opts.TableRefs[0]].Rows[v].DataType)
-								for k, v := range db.Tables[opts.TableRefs[0]].Rows[v].Data {
+								t.DataTypes = append(t.DataTypes, tbl.Rows[v].DataType)
+								for k, v := range tbl.Rows[v].Data {
 									if len(t.Data) <= k {
 										var empty []string
 										t.Data = append(t.Data, empty)
 										t.Data[k] = append(t.Data[k], v)
-										t.RowsAffected++
 									} else {
 										t.Data[k] = append(t.Data[k], v)
-										t.RowsAffected++
 									}
 								}
 							} else {
@@ -144,14 +141,21 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 					t.Distinct()
 				}
 
+				if len(opts.FuncCols) != 0 {
+					err := db.funcInterpret(&t, opts)
+					if err != nil {
+						return Response{}, err
+					}
+				}
+
 				if opts.Limit > 0 {
 					if opts.Limit > len(t.Data) {
-						return Response{}, &errorString{"Limit out of range"}
+						return Response{}, errors.New("Limit out of range")
 					}
 					t.Data = t.Data[:opts.Limit]
 				}
 
-				log.Println(len(opts.FuncCols))
+				t.RowsAffected = len(t.Data)
 
 				if opts.Order != "" && len(t.Data) > 1 {
 					if opts.By == "ASC" || opts.By == "" {
@@ -174,16 +178,16 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 						}
 					}
 				}
-
-				// log.Println(t.Data[1][0])
-
-				return t, nil
+			} else {
+				// Return error if table doesn't exist
+				return Response{}, errors.New("Table does not exist")
 			}
 		} else {
 			// Cartesian product
+			return Response{}, errors.New("Cartersian Product not implemented")
 		}
-		// Return error if table doesn't exist
-		return Response{}, &errorString{"Table doesn't exist"}
+
+		return t, nil
 	}
 	// Parse the column refs if there are no tables specified
 	for _, v := range opts.ColumnRefs {
@@ -192,4 +196,82 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 		t.Data[0] = append(t.Data[0], v)
 	}
 	return t, nil
+}
+
+func (db *Database) funcInterpret(res *Response, opts *interpreter.SelectOptions) error {
+
+	var tmp []string
+	var tmpColName []string
+
+	for _, v := range opts.FuncCols {
+		// Check if sum or count
+		if opts.FuncMap[v] == "sum" {
+
+			tmpColName = append(tmpColName, "SUM")
+
+			// Check if the column exists in table
+			tbl := db.Tables[opts.TableRefs[0]]
+			if _, exists := tbl.Rows[v]; exists {
+				// Check if we can sum the column
+				if tbl.Rows[v].DataType == "string" {
+					return errors.New("Cannot sum string")
+				} else if tbl.Rows[v].DataType == "boolean" {
+					return errors.New("Cannot sum boolean")
+				} else {
+					// Sum either float or int
+					// Check if float or int
+					if tbl.Rows[v].DataType == "float" {
+						tmpSum := 0.0
+						for _, v := range tbl.Rows[v].Data {
+							if f, err := strconv.ParseFloat(v, 64); err != nil {
+								return err
+							} else {
+								tmpSum += f
+							}
+						}
+						tmp = append(tmp, fmt.Sprint(tmpSum))
+					} else if tbl.Rows[v].DataType == "int" {
+						tmpSum := 0
+						for _, v := range tbl.Rows[v].Data {
+							if i, err := strconv.Atoi(v); err != nil {
+								return err
+							} else {
+								tmpSum += i
+							}
+						}
+						tmp = append(tmp, fmt.Sprint(tmpSum))
+					} else {
+						// Not yet implemented
+					}
+				}
+			} else {
+				return errors.New("Column doesn't exist in DB")
+			}
+		} else if opts.FuncMap[v] == "count" {
+
+			tmpColName = append(tmpColName, "COUNT")
+			// Append the current length of the data
+			tmp = append(tmp, fmt.Sprint(db.Tables[opts.TableRefs[0]].Length))
+			log.Print(tmp)
+
+		} else {
+			// There is nothing to do so do nothing
+			return errors.New("Function not yet implemented")
+		}
+	}
+
+	if len(tmpColName) != 0 {
+		res.Names = append(res.Names, tmpColName...)
+		if len(res.Data) == 0 {
+			var empty []string
+			res.Data = append(res.Data, empty)
+			res.Data[0] = append(res.Data[0], tmp...)
+		} else {
+			for k := range res.Data {
+				res.Data[k] = append(res.Data[k], tmp...)
+			}
+		}
+	}
+
+	return nil
 }

@@ -110,28 +110,16 @@ func TestFrom(t *testing.T) {
 
 }
 
-// func TestInsertInto(t *testing.T) {
-// 	insertion := make(map[string]string)
-//
-// 	insertion[col1] = "hello"
-// 	insertion[col2] = "world"
-//
-// 	db.InsertInto(tblName, insertion)
-//
-// 	insertion = make(map[string]string)
-// 	insertion[col1] = "second round"
-//
-// 	db.InsertInto(tblName, insertion)
-// }
-
 func TestCreate(t *testing.T) {
 	query := "CREATE table test2 (col1 string, col2 string);"
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
 		opts := interpreter.DescribeCreate(r)
-		t.Log(db.Create(opts))
-		t.Log(db.Tables["test2"])
+		db.Create(opts)
+		if db.Tables["test2"] == nil {
+			t.Fatal("Failed to create table")
+		}
 	}
 }
 
@@ -140,24 +128,36 @@ func TestInsert(t *testing.T) {
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
+		prevLength := db.Tables["testTbl"].Length
 		opts := interpreter.DescribeInsert(r)
-		t.Log(db.Insert(opts))
+		db.Insert(opts)
+		if prevLength+1 != db.Tables["testTbl"].Length {
+			t.Fatal("Failed to insert")
+		}
 	}
 
 	query = "INSERT INTO testTbl (col1, col2) VALUES (\"anakin\", \"world\");"
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
+		prevLength := db.Tables["testTbl"].Length
 		opts := interpreter.DescribeInsert(r)
-		t.Log(db.Insert(opts))
+		db.Insert(opts)
+		if prevLength+1 != db.Tables["testTbl"].Length {
+			t.Fatal("Failed to insert")
+		}
 	}
 
 	query = "INSERT INTO testTbl (col1, col2) VALUES (\"skywalker\", \"world\");"
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
+		prevLength := db.Tables["testTbl"].Length
 		opts := interpreter.DescribeInsert(r)
-		t.Log(db.Insert(opts))
+		db.Insert(opts)
+		if prevLength+1 != db.Tables["testTbl"].Length {
+			t.Fatal("Failed to insert")
+		}
 	}
 }
 
@@ -198,53 +198,49 @@ func TestUpdate(t *testing.T) {
 
 func TestSelect(t *testing.T) {
 
-	// query := "SELECT * FROM testTbl;"
-	// if r, err := parser.Tokenize(query); err != nil {
-	// 	t.Fatal(err)
-	// } else {
-	// 	opts := interpreter.DescribeSelect(r)
-	// 	res, err := db.Select(opts)
-	// 	t.Log(res, err)
-	// }
+	query := "SELECT * FROM testTbl;"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		opts := interpreter.DescribeSelect(r)
+		res, err := db.Select(opts)
+		if err != nil {
+			t.Fatal(err)
+		} else {
+			t.Log(res)
+		}
+	}
 
-	query := "SELECT col1 FROM testTbl where col1 =\"hello\";"
+	query = "SELECT col1 FROM testTbl where col1 =\"hello\";"
 	t.Log(query)
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
-		// Get the Update opts with the query
 		// t.Log(r)
 		opts := interpreter.DescribeSelect(r)
 		res, err := db.Select(opts)
-		// if err != nil {
-		// 	t.Fatal(err)
-		// } else if res.Names[0] != "col1" {
-		// 	t.Fatal("Column returned should only be col1")
-		// } else if res.RowsAffected != 1 {
-		// 	t.Fatal("Expected only one row returned")
-		// }
 		t.Log(res, err)
 	}
 
 	//Second query where there will be an error
-	// query = "SELECT ERROR FROM testTbl where col1 =\"hello\";"
-	// if r, err := parser.Tokenize(query); err != nil {
-	// 	t.Fatal(err)
-	// } else {
-	// 	opts := interpreter.DescribeSelect(r)
-	// 	_, err := db.Select(opts)
-	// 	if err == nil {
-	// 		t.Fatal("Should be expected error")
-	// 	}
-	// }
-	// query = "SELECT 1;"
-	// if r, err := parser.Tokenize(query); err != nil {
-	// 	t.Fatal(err)
-	// } else {
-	// 	opts := interpreter.DescribeSelect(r)
-	// 	res, _ := db.Select(opts)
-	// 	t.Log(res)
-	// }
+	query = "SELECT ERROR FROM testTbl where col1 =\"hello\";"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		opts := interpreter.DescribeSelect(r)
+		_, err := db.Select(opts)
+		if err == nil {
+			t.Fatal("Should be expected error")
+		}
+	}
+	query = "SELECT 1;"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		opts := interpreter.DescribeSelect(r)
+		res, _ := db.Select(opts)
+		t.Log(res)
+	}
 
 	query = "SELECT * FROM testTbl;"
 	if r, err := parser.Tokenize(query); err != nil {
@@ -254,7 +250,6 @@ func TestSelect(t *testing.T) {
 		res, _ := db.Select(opts)
 		t.Log(res)
 	}
-
 }
 
 func TestSelectLimit(t *testing.T) {
@@ -264,7 +259,11 @@ func TestSelectLimit(t *testing.T) {
 		t.Fatal(err)
 	} else {
 		opts := interpreter.DescribeSelect(r)
-		t.Log(db.Select(opts))
+		if res, err := db.Select(opts); err != nil {
+			t.Fatal(err)
+		} else if len(res.Data) != 1 || res.RowsAffected != 1 {
+			t.Fatal("Failed to limit")
+		}
 	}
 }
 
@@ -275,42 +274,23 @@ func TestSelectFunction(t *testing.T) {
 		t.Fatal(err)
 	} else {
 		opts := interpreter.DescribeSelect(r)
-		t.Log(opts)
+		if _, err := db.Select(opts); err == nil {
+			t.Fatal("Should return err because summing strings")
+		}
 	}
 
-	query = "SELECT COUNT(*), test FROM testTbl;"
+	query = "SELECT COUNT(col1) FROM testTbl;"
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
 		opts := interpreter.DescribeSelect(r)
-		t.Log(len(opts.FuncCols))
+		if res, err := db.Select(opts); err != nil {
+			t.Fatal(err)
+		} else {
+			t.Log(res)
+		}
 	}
 }
-
-// func TestDelete(t *testing.T) {
-//
-// 	// t.Log(db.Tables[tblName].Rows["col2"])
-//
-// 	query := "DELETE FROM testTbl WHERE col2 = \"world\";"
-// 	if r, err := parser.Tokenize(query); err != nil {
-// 		t.Fatal(err)
-// 	} else {
-// 		// Get the Update opts with the query
-// 		// t.Log(r)
-// 		opts := interpreter.DescribeDelete(r)
-// 		// t.Log(opts)
-// 		// test := make(map[string]string)
-// 		// test["col1"] = "\"Hello\""
-// 		// test["col2"] = "\"world\""
-// 		// t.Log(opts.Condition(test))
-// 		db.Delete(opts)
-// 		if db.Tables[tblName].Length > 0 || len(db.Tables[tblName].Rows[col2].Data) > 0 {
-// 			t.Fatal("Failed to delete row")
-// 		}
-// 	}
-//
-// 	// t.Log(db.Tables[tblName].Rows["col2"])
-// }
 
 func createDB() error {
 	var err error
