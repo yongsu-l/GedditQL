@@ -98,16 +98,6 @@ func TestFrom(t *testing.T) {
 		t.Error("Table shouldn't exist in db")
 	}
 
-	// Create table then check if it exists
-
-	//var empty []Schema
-
-	//db.CreateTable(tblName, empty)
-
-	//if _, exist := db.Tables[tblName]; exist == false {
-	//	t.Error("Table should exist in db")
-	//}
-
 }
 
 func TestCreate(t *testing.T) {
@@ -159,12 +149,6 @@ func TestInsert(t *testing.T) {
 			t.Fatal("Failed to insert")
 		}
 	}
-}
-
-func TestColumnNames(t *testing.T) {
-	//db.ColumnNames("Test")
-	//t.Log(db.ColumnNames("Test"))
-	// t.Log(db.Tables[tblName].Rows[col1])
 }
 
 func TestSelect(t *testing.T) {
@@ -221,6 +205,18 @@ func TestSelect(t *testing.T) {
 		res, _ := db.Select(opts)
 		t.Log(res)
 	}
+
+	query = "SELECT 1;"
+	if r, err := parser.Tokenize(query); err != nil {
+		t.Fatal(err)
+	} else {
+		opts := interpreter.DescribeSelect(r)
+		if res, err := db.Select(opts); err != nil {
+			t.Fatal(err)
+		} else {
+			t.Log(res)
+		}
+	}
 }
 
 func TestSelectLimit(t *testing.T) {
@@ -239,22 +235,25 @@ func TestSelectLimit(t *testing.T) {
 }
 
 func TestSelectFunction(t *testing.T) {
-	// First test sum of columns
-	query := "SELECT SUM(col1) from testTbl LIMIT 1;"
+
+	query := "SELECT COUNT(col1) FROM testTbl;"
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
 		opts := interpreter.DescribeSelect(r)
-		if _, err := db.Select(opts); err == nil {
-			t.Fatal("Should return err because summing strings")
+		if res, err := db.Select(opts); err != nil {
+			t.Fatal(err)
+		} else {
+			t.Log(res)
 		}
 	}
 
-	query = "SELECT COUNT(col1) FROM testTbl;"
+	query = "SELECT COUNT(*) FROM testTbl;"
 	if r, err := parser.Tokenize(query); err != nil {
 		t.Fatal(err)
 	} else {
 		opts := interpreter.DescribeSelect(r)
+		t.Log(opts.TableRefs)
 		if res, err := db.Select(opts); err != nil {
 			t.Fatal(err)
 		} else {
