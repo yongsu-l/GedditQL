@@ -4,7 +4,6 @@ import (
 	"GedditQL/server/interpreter"
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 )
@@ -29,7 +28,6 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 							for k, v := range db.Tables[opts.TableRefs[0]].Rows {
 								tmp[k] = v.Data[i]
 							}
-							log.Print(i)
 
 							// Check if the condition function isn't nil
 							if chk, err := opts.Condition(tmp); err != nil {
@@ -192,6 +190,7 @@ func (db *Database) Select(opts *interpreter.SelectOptions) (Response, error) {
 	// Parse the column refs if there are no tables specified
 	for _, v := range opts.ColumnRefs {
 		var empty []string
+		t.Names = append(t.Names, v)
 		t.Data = append(t.Data, empty)
 		t.Data[0] = append(t.Data[0], v)
 	}
@@ -233,10 +232,13 @@ func (db *Database) funcInterpret(res *Response, opts *interpreter.SelectOptions
 					} else if tbl.Rows[v].DataType == "int" {
 						tmpSum := 0
 						for _, v := range tbl.Rows[v].Data {
-							if i, err := strconv.Atoi(v); err != nil {
-								return err
-							} else {
-								tmpSum += i
+							// Check if string is empty
+							if len(v) != 0 {
+								if i, err := strconv.Atoi(v); err != nil {
+									return err
+								} else {
+									tmpSum += i
+								}
 							}
 						}
 						tmp = append(tmp, fmt.Sprint(tmpSum))
@@ -259,8 +261,6 @@ func (db *Database) funcInterpret(res *Response, opts *interpreter.SelectOptions
 					for k, v := range db.Tables[opts.TableRefs[0]].Rows {
 						tmp[k] = v.Data[i]
 					}
-					log.Print(i)
-
 					// Check if the condition function isn't nil
 					if chk, err := opts.Condition(tmp); err != nil {
 						return errors.New("Error checking column")
@@ -272,7 +272,6 @@ func (db *Database) funcInterpret(res *Response, opts *interpreter.SelectOptions
 				tmpCount = db.Tables[opts.TableRefs[0]].Length
 			}
 			tmp = append(tmp, fmt.Sprint(tmpCount))
-
 		} else {
 			// There is nothing to do so do nothing
 			return errors.New("Function not yet implemented")
